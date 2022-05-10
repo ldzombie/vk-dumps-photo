@@ -1,0 +1,1 @@
+{"dump_config": {"path": "dump", "download": true, "download_errors": "download_errors.json", "limit_photo": 200, "limit_dialog": 25}}
