@@ -19,7 +19,7 @@ def_config ={
 	"dump_config": {
 	  "path": "dump",
 	  "download": True,
-	  "download_errors": "download_errors.json",
+	  "dump": False,
 	  "limit_photo": 1000,
 	  "limit_dialog": 50
 	}}
@@ -28,8 +28,6 @@ login_data={
 	"token": 0,
 	"login": 0,
 	"password":0}
-
-
 
 class LoginVK:
 	API_VERSION = '5.92'
@@ -71,18 +69,26 @@ class LoginVK:
 		key = input(f"Введите капчу ({captcha.get_url()}): ").strip()
 		return captcha.try_again(key)
 
+def out_red(text):
+	FAIL = '\033[91m'
+	ENDC = '\033[0m'
+	print(f'{FAIL}{text} {ENDC}')
+
 def get_dump_config():
 	global limit_photo
 	global limit_dialog
 	global dump_path
 	global download
+	global dump
 	global path_user
 
 	limit_photo = def_config['dump_config']['limit_photo']
 	limit_dialog = def_config['dump_config']['limit_dialog']
 	dump_path = def_config['dump_config']['path']
 	download = def_config['dump_config']['download']
+	dump = def_config['dump_config']['dump']
 	path_user= f'{path}/{dump_path}/{own_id} - {name}'
+
 
 def get_stand():
 	try:
@@ -104,6 +110,8 @@ def get_stand():
 #Фотографии из диалогов
 def get_dialogs_photo(p_id):
 	try:
+		if download == False and dump == False:
+			main_menu()
 		if download ==True:
 			file = photo.read()
 			photo.close()
@@ -181,14 +189,12 @@ def get_dialogs_photo(p_id):
 						elif len(a_photo)==0:
 							break
 
-						
-
-						
 						for i in a_photo: # Идем по списку вложений
 							for j in i["attachment"]["photo"]["sizes"]:
 								if j["height"] > 500 and j["height"] < 650: # Проверка размеров
 									url = j["url"] # Получаем ссылку на изображение
-									urls.append(url)
+									if dump == True:
+										urls.append(url)
 									if download == True:
 										file += f'<img class="photos" src="{url}" alt="Не удалось загрузить (:" title="Найдено в диалоге - vk.com/id{idd}">' # Сохраняем в переменную
 
@@ -200,16 +206,17 @@ def get_dialogs_photo(p_id):
 							save_photo.write(file) # Сохраняем диалог
 							save_photo.close() # Закрываем
 							file = open(f'{path}/photo_pre.html', 'r', encoding="utf8").read()
-
-						albums.append({'name': '_'.join(fio),'photos': urls})
+						if dump == True:
+							albums.append({'name': '_'.join(fio),'photos': urls})
 						print(f"Выгруженно {len(a_photo)} фотографий")
 				else:
 					print("Это группа!")
 			else:
 				print("Это конфа!")
 
-		with open(join(f'{path_user}/dialog/', 'albums.json'), 'w') as alb_file:
-			json.dump(albums, alb_file)
+		if dump == True:
+			with open(join(f'{path_user}/dialog/', 'albums.json'), 'w') as alb_file:
+				json.dump(albums, alb_file)
 
 		print("Выгрузка фотографий из диалогов завершена")
 		print(" ")
@@ -230,6 +237,9 @@ def get_dialogs_photo(p_id):
 #Фотографии из плейлистов
 def get_photos_profile():
 	try:
+		if download ==False and dump==False:
+			main_menu()
+
 		path_albums= f'{path_user}/albums'
 		json_albums = []
 		urls=[]
@@ -265,13 +275,14 @@ def get_photos_profile():
 				for j in i["sizes"]:
 					if j["height"] > 500 and j["height"] < 650: # Проверка размеров
 						url = j["url"] # Получаем ссылку на изображение
-						urls.append(url)
+						if dump == True:
+							urls.append(url)
 						if download == True:
 							
 							file += f'<img class="photos" src="{url}" alt="Не удалось загрузить (:" title="Найдено в альбоме - {idd}">' # Сохраняем в переменную
 						break #чтобы не добавляло одинаковых фото
-
-			json_albums.append({'name': "_".join(title.split(' ')),'photos': urls})
+			if dump == True:
+				json_albums.append({'name': "_".join(title.split(' ')),'photos': urls})
 
 			print(f"Выгруженно {len(a_photos)} фотографий")
 			if download == True:
@@ -279,9 +290,9 @@ def get_photos_profile():
 				save_photo.write(file) # Сохраняем диалог
 				save_photo.close() # Закрываем
 				file = open(f'{path}/photo_pre.html', 'r', encoding="utf8").read()
-			
-		with open(join(f'{path_albums}/', 'albums.json'), 'w') as alb_file:
-			json.dump(json_albums, alb_file)
+		if dump == True:
+			with open(join(f'{path_albums}/', 'albums.json'), 'w') as alb_file:
+				json.dump(json_albums, alb_file)
 		print("Выгрузка фотографий из альбомов завершена")
 		print(" ")
 		print("[99] Назад")
@@ -300,6 +311,8 @@ def get_photos_profile():
 #Фотографии из плейлистов пользователя
 def get_photos_friend(owner_id):
 	try:
+		if download == False and dump == False:
+			main_menu()
 		user = login_vk.vk.users.get(user_ids=owner_id)
 		fio = f'{user["first_name"]} {user["last_name"]}'
 		json_albums = []
@@ -339,13 +352,14 @@ def get_photos_friend(owner_id):
 				for j in i["sizes"]:
 					if j["height"] > 500 and j["height"] < 650: # Проверка размеров
 						url = j["url"] # Получаем ссылку на изображение
-						urls.append(url)
+						if dump == True:
+							urls.append(url)
 						if download == True:
 							
 							file += f'<img class="photos" src="{url}" alt="Не удалось загрузить (:" title="Найдено в альбоме - {idd}">' # Сохраняем в переменную
 						break #чтобы не добавляло одинаковых фото
-
-			json_albums.append({'name': "_".join(title.split(' ')),'photos': urls})
+			if dump == True:
+				json_albums.append({'name': "_".join(title.split(' ')),'photos': urls})
 
 			print(f"Выгруженно {len(a_photos)} фотографий")
 			if download == True:
@@ -353,9 +367,9 @@ def get_photos_friend(owner_id):
 				save_photo.write(file) # Сохраняем диалог
 				save_photo.close() # Закрываем
 				file = open(f'{path}/photo_pre.html', 'r', encoding="utf8").read()
-			
-		with open(join(f'{path_albums}/', 'albums.json'), 'w') as alb_file:
-			json.dump(json_albums, alb_file)
+		if dump == True:
+			with open(join(f'{path_albums}/', 'albums.json'), 'w') as alb_file:
+				json.dump(json_albums, alb_file)
 		print("Выгрузка фотографий из альбомов завершена")
 		print(" ")
 		print("[99] Назад")
@@ -372,10 +386,8 @@ def get_photos_friend(owner_id):
 		main_menu()
 
 def main_menu():
-	clear()
 	get_stand()
-	print(f'{name} -  Авторизован')
-	print(" ")
+	auth_print()
 	print("[1] Дамп фотографий из всех диалогов")
 	print("[2] Дамп фотографий диалога с опр. пользователем")
 	print("[3] Дамп фотографий (сохры. и т.д.)")
@@ -385,6 +397,10 @@ def main_menu():
 	print("[111] Настройки")
 	print("[0] Выйти из аккаунта")
 	print(" ")
+
+	if dump == False and download == False:
+		def_config['dump_config']['dump'] = True
+		update_settings()
 
 	try:
 		inp = int(input("Ввод: "))
@@ -417,14 +433,21 @@ def main_menu():
 		error_log.add('main_menu', e)
 		main_menu()
 
-def settings():
-	clear()
-	print(f'{name} -  Авторизован')
+def update_settings(bol):
+	dump_defconfig()
+	get_dump_config()
+	if bol:
+		settings()
 
-	print(" ")
+def settings(err=""):
+	auth_print()
+
+	if len(err)>0:
+		out_red(err)
 
 	print(f'Папка сохранения - {dump_path}')
 	print(f'download - {download}')
+	print(f'dump - {dump}')
 
 	if limit_photo == 0:
 		print(f'Лимит фотографий - нет')
@@ -440,8 +463,9 @@ def settings():
 
 	print("[1] Изменить папку сохранения")
 	print("[2] Изменить download")
-	print("[3] Изменить лимит фотографий")
-	print("[4] Изменить лимит диалогов")
+	print("[3] Изменить dump")
+	print("[4] Изменить лимит фотографий")
+	print("[5] Изменить лимит диалогов")
 	
 	print(" ")
 	print("[99] Назад")
@@ -452,39 +476,33 @@ def settings():
 			case 1:
 				l = input("Введите название папки: ")
 				def_config['dump_config']['path'] = l
-				dump_defconfig()
-
-				get_dump_config()
-
-				settings()
+				
 			case 2:
-				if def_config['dump_config']['download'] == False:
+				if download == False:
 					def_config['dump_config']['download'] = True
 				else:
 					def_config['dump_config']['download'] = False
-				dump_defconfig()
-
-				get_dump_config()
-
-				settings()
+				update_settings(True)
 			case 3:
-				l = int(input("Введите число: "))
-				def_config['dump_config']['limit_photo'] = l
-				dump_defconfig()
-
-				get_dump_config()
-
-				settings()
+				if dump == False :
+					def_config['dump_config']['dump'] = True
+				else:
+					def_config['dump_config']['dump'] = False
+				update_settings(True)
 			case 4:
 				l = int(input("Введите число: "))
+				def_config['dump_config']['limit_photo'] = l
+				update_settings(True)
+			case 5:
+				l = int(input("Введите число: "))
 				def_config['dump_config']['limit_dialog'] = l
-				dump_defconfig()
-
-				get_dump_config()
-
-				settings()
+				update_settings(True)
 			case 99:
-				main_menu()
+				if dump != False or download != False:
+					main_menu()
+				else:
+					settings("Хотя бы одна из переменных, download или dump, должна быть True")
+
 			case _:
 				print("Такого варианта нет")
 				settings()
@@ -502,7 +520,7 @@ def auth_menu():
 	print("[1] Токен")
 	print("[2] Логин и пароль")
 
-	inp = 1#int(input("Выберите способ входа: "))
+	inp = int(input("Выберите способ входа: "))
 	try:
 		match inp:
 			case 1:
@@ -519,9 +537,10 @@ def auth_menu():
 	except Exception as e:
 		error_log.add('auth_menu', e)
 
-def dump_manager(config):
-	#dump_config = config['dump_config']
-	auth_menu()
+def auth_print():
+	clear()
+	print(f'{name} -  Авторизован')
+	print(" ")
 
 def dump_defconfig():
 	with open('config.json', 'w') as config_file:
@@ -532,13 +551,17 @@ def collect(config): #
 	login_vk = LoginVK(config)
 	if login_vk.account["id"] > 0:
 		main_menu()
-	#return MethodsVK(login_vk.vk, login_vk.vk_tools, login_vk.account) 
 
 if __name__ == '__main__':
 	try:
 		with open('config.json', 'r') as config_file:
 			def_config = json.load(config_file)
-		dump_manager(def_config)
+		auth_menu()
 	except Exception as e:
-		error_log.add(__name__, e)
+		if "No such file or directory" in str(e):
+			dump_defconfig()
+			auth_menu()
+		error_log.add("__name___", e)
+
+
 	error_log.save_log('error.log')
