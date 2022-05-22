@@ -1,1 +1,1 @@
-{"dump_config": {"path": "dump", "download": false, "dump": true, "limit_photo": 1000, "limit_dialog": 50}}
+{"dump_config": {"path": "dump", "download": false, "dump_txt": false, "dump_html": true, "limit_photo": 475, "limit_dialog": 10}}
