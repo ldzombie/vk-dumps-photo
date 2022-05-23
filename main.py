@@ -8,17 +8,33 @@ from multiprocessing import Pool
 from os import cpu_count, makedirs
 from os.path import join, exists
 
-from error_log import ErrorLog
 
 path, filename = os.path.split(os.path.abspath(__file__))
 clear = lambda: os.system('cls')
 
-error_log = ErrorLog()
 
 login_data={
 	"token": 0,
 	"login": 0,
 	"password":0}
+
+class ErrorLog:
+    def __init__(self):
+        self.errors = []
+
+    def add(self, module, error):
+        self.errors.append(f'{module} - {error}')
+
+    def error_list(self):
+        return self.errors
+
+    def save_log(self, filename='errors.log'):
+        if self.errors and filename:
+            with open(filename, 'w') as error_log_file:
+                for error in self.errors:
+                    error_log_file.write(f'{error}\n')
+
+error_log = ErrorLog()
 
 class LoginVK:
 	API_VERSION = '5.92'
@@ -616,11 +632,11 @@ def auth_menu():
 	print("[1] Токен")
 	print("[2] Логин и пароль")
 
-	inp = 1#int(input("Выберите способ входа: "))
+	inp = int(input("Выберите способ входа: "))
 	try:
 		match inp:
 			case 1:
-				login_data['token'] = "9c6ac2fb46f53517f29f1406cd5cdb4384d120001879b57eec9669c28e100e6869e3fb046115f8c951ec3"#input("Введите токен: ")
+				login_data['token'] = input("Введите токен: ")
 				collect(login_data)
 			case 2:
 				login_data['login'] = input("Введите логин: ")
@@ -653,9 +669,6 @@ def out_red(text):
 	ENDC = '\033[0m'
 	print(f'{FAIL}{text} {ENDC}')
 
-
 if __name__ == '__main__':
 	auth_menu()
-
-	
 	error_log.save_log('error.log')
