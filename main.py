@@ -7,12 +7,13 @@ from itertools import repeat
 from multiprocessing import Pool
 from os import cpu_count, makedirs
 from os.path import join, exists
+import base64
+import requests
+#import logging
+#import logging.config
 
 path, filename = os.path.split(os.path.abspath(__file__))
 clear = lambda: os.system('cls')
-
-import base64
-import requests
 
 global debug
 debug = False
@@ -20,7 +21,7 @@ debug_data={
 	#автоматический вход по токену
 	"token": "",
 	#id человека для проверки функций
-	"user_t_test": 0,}
+	"user_t_test": 0}
 
 login_data={
 	"token": 0,
@@ -171,18 +172,13 @@ class Settings:
 #Фотографии из диалогов
 def get_dialogs_photo(p_id):
 	try:
-		limit_dialog = setting.limit_dialog
-		limit_photo = setting.limit_photo
-		dump_txt = setting.dump_txt
-		dump_html = setting.dump_html
-		dump_html_offline = setting.dump_html_offline
-		path_user = setting.path_user
+		update_variables()
 
 		if dump_html or dump_html_offline:	 
 			file = open(f'{path}/photo_pre.html', 'r', encoding="utf8").read()
-
-		urls=[]
-		albums=[]
+		if dump_txt:
+			urls=[]
+			dialogs=[]
 		if(p_id > 0):
 			test = login_vk.vk.messages.getConversationsById(peer_ids=p_id)
 			all_dialogs =test["items"]
@@ -218,13 +214,13 @@ def get_dialogs_photo(p_id):
 
 		makedirs(f'{path_dialog}', exist_ok=True)
 
-		for i in all_dialogs: # Идем по списку
+		for dialog in all_dialogs: # Идем по списку
 			if(p_id > 0):
-				idd = i["peer"]["id"]
-				peer_type = i['peer']['type'] # Информация о диалоге
+				idd = dialog["peer"]["id"]
+				peer_type = dialog['peer']['type'] # Информация о диалоге
 			else:
-				idd = i["conversation"]["peer"]["id"] # Вытаскиваем ID человека с  диалога
-				peer_type = i['conversation']['peer']['type'] # Информация о диалоге (конференция это или человек)
+				idd = dialog["conversation"]["peer"]["id"] # Вытаскиваем ID человека с  диалога
+				peer_type = dialog['conversation']['peer']['type'] # Информация о диалоге (конференция это или человек)
 			
 			if peer_type == "user": # Ставим проверку конференции
 				if idd > 0: # Ставим проверку на группы
@@ -294,7 +290,7 @@ def get_dialogs_photo(p_id):
 						save_photo.close() # Закрываем
 						file = open(f'{path}/photo_pre.html', 'r', encoding="utf8").read()
 					if dump_txt == True:
-						albums.append({'name': '_'.join(fio),'photos': urls})
+						dialogs.append({'name': '_'.join(fio),'photos': urls})
 						urls=[]
 					print(f"Выгруженно {len(a_photo)} фотографий")
 				else:
@@ -308,7 +304,7 @@ def get_dialogs_photo(p_id):
 			else: 
 				file_name = 'dialogs.json'
 			with open(join(f'{path_dialog}', file_name), 'w') as alb_file:
-				json.dump(albums, alb_file)
+				json.dump(dialogs, alb_file)
 
 
 		print("Выгрузка фотографий из диалогов завершена")
@@ -318,21 +314,17 @@ def get_dialogs_photo(p_id):
 		print(e)
 		out_dump()
 	except KeyboardInterrupt:
-		sys.exit()
+		out_dump()
 
 #Фотографии из плейлистов
 def get_photos_profile():
 	try:
-		limit_dialog = setting.limit_dialog
-		limit_photo = setting.limit_photo
-		dump_txt = setting.dump_txt
-		dump_html = setting.dump_html
-		dump_html_offline = setting.dump_html_offline
-		path_user = setting.path_user
+		update_variables()
 
 		path_albums= f'{path_user}/albums'
-		json_albums = []
-		urls=[]
+		if dump_txt:
+			json_albums = []
+			urls=[]
 		if dump_html or dump_html_offline :
 				file = open(f'{path}/photo_pre.html', 'r', encoding="utf8").read()
 		albums = login_vk.vk.photos.getAlbums(need_system=1)
@@ -342,10 +334,10 @@ def get_photos_profile():
 
 		makedirs(f'{path_user}/albums', exist_ok=True)
 
-		for i in albums["items"]:
-			idd = i["id"]
-			title = i["title"]
-			size = i["size"]
+		for album in albums["items"]:
+			idd = album["id"]
+			title = album["title"]
+			size = album["size"]
 			if size == 0:
 				continue
 
@@ -414,25 +406,21 @@ def get_photos_profile():
 		print(e)
 		out_dump()
 	except KeyboardInterrupt:
-		sys.exit()
+		out_dump()
 		
 #Фотографии из плейлистов пользователя
 def get_photos_friend(own_id):
 	try:
-		limit_dialog = setting.limit_dialog
-		limit_photo = setting.limit_photo
-		dump_txt = setting.dump_txt
-		dump_html = setting.dump_html
-		dump_html_offline = setting.dump_html_offline
-		path_user = setting.path_user
+		update_variables()
 
 		user = login_vk.vk.users.get(user_ids=own_id)[0]
 		fio = f'{user["first_name"]} {user["last_name"]}'
-		json_albums = []
-		urls=[]
+		
 		if dump_html or dump_html_offline:
-				file = open(f'{path}/photo_pre.html', 'r', encoding="utf8").read()
-
+			file = open(f'{path}/photo_pre.html', 'r', encoding="utf8").read()
+		if dump_txt:
+			json_albums = []
+			urls=[]
 		albums = login_vk.vk.photos.getAlbums(owner_id=own_id, need_system=1)
 
 		num = albums["count"]# Количество альбомов
@@ -444,16 +432,16 @@ def get_photos_friend(own_id):
 
 		makedirs(f'{path_user_friend}/albums', exist_ok=True)
 
-		for i in albums["items"]:
-			idd = i["id"]
-			title = i["title"]
-			count = i["size"]
+		for album in albums["items"]:
+			idd = album["id"]
+			title = album["title"]
+			count = album["size"]
 			if count ==0:
 				continue
 			print(f"{title} - Фото: {count}")
 			
 			a_photos = login_vk.vk.photos.get(owner_id=own_id,album_id=idd, photo_sizes=1, rev=1, count=1000, offset=0)["items"]
-			if count > 1000 and a_photos < limit_photo or count > 1000 and limit_photo==0:
+			if count > 1000 and len(a_photos) < limit_photo or count > 1000 and limit_photo==0:
 				offset=1000 # сдвиг начала отсчёта
 				while True: #получаем все фотографии если их больше 1000
 					a_photos +=login_vk.vk.photos.get(owner_id=own_id,album_id=idd, photo_sizes=1, rev=1, count=1000, offset=offset)["items"]
@@ -483,16 +471,118 @@ def get_photos_friend(own_id):
 				save_photo = open(f'{path_albums}/{title}.html', 'w+', encoding="utf8") # Открываем файл
 				save_photo.write(file) # Сохраняем диалог
 				save_photo.close() # Закрываем
-				file = open(f'{path}/photo_pre.html', 'r', encoding="utf8").read()
 		if dump_txt == True:
 			with open(join(f'{path_albums}/', 'albums.json'), 'w') as alb_file:
 				json.dump(json_albums, alb_file)
 		print("Выгрузка фотографий из альбомов завершена")
 		out_dump()
 	except Exception as e: # Исключения ошибок
-		error_log.add('get_photos_profile', e)
+		error_log.add('get_photos_friend', e)
 		print(e)
 		out_dump()
+	except KeyboardInterrupt:
+		out_dump()
+
+def get_photos_friends():
+	try:
+		update_variables()
+		if debug: 
+			deb_count = 0
+		friends = login_vk.vk.friends.get(fields="1",order="hints",name_case="nom",count=250)
+		print("Общее количество пользователей: " + str(friends['count']))
+		for friend in friends['items']:
+			own_id = friend['id']
+			
+			if debug:
+				print(deb_count)
+				deb_count+=1
+
+			try:
+				albums = login_vk.vk.photos.getAlbums(owner_id=own_id, album_ids= "-15")
+				if albums['count'] == 0 or not albums['items'][0]['id'] == -15:
+					continue
+			except Exception as e:
+				continue
+
+			if dump_txt:
+				json_albums=[]
+				urls=[]
+			if dump_html or dump_html_offline:
+				file = open(f'{path}/photo_pre.html', 'r', encoding="utf8").read()
+
+			fio = f'{friend["first_name"]} {friend["last_name"]}'
+
+			print(f"Начинаю выгрузку фотографий " + fio)
+			path_user_friend=f'{path}/dump/{own_id} - {fio}'
+			path_albums= f'{path_user_friend}/albums'
+			makedirs(f'{path_user_friend}/albums', exist_ok=True)
+
+			idd = albums['items'][0]['id']
+			title = albums['items'][0]["title"]
+			count = albums['items'][0]["size"]
+			print(f"{title} - Фото: {count}")
+			a_photos = login_vk.vk.photos.get(owner_id=own_id,album_id=idd, photo_sizes=1, rev=1, count=1000, offset=0)["items"]
+			if count > 1000 and len(a_photos) < limit_photo or count > 1000 and limit_photo==0:
+				offset=1000 # сдвиг начала отсчёта
+				while True: #получаем все фотографии если их больше 1000
+					a_photos +=login_vk.vk.photos.get(owner_id=own_id,album_id=idd, photo_sizes=1, rev=1, count=1000, offset=offset)["items"]
+
+					if len(a_photos) >= limit_photo or count == len(a_photos):
+						break
+					else:
+						offset += 1000
+
+			for i in a_photos: # Идем по списку вложений
+				for j in i["sizes"]:
+					if j["height"] > 500 and j["height"] < 650: # Проверка размеров
+						url = j["url"] # Получаем ссылку на изображение
+						if dump_txt == True:
+							urls.append(url)
+						if dump_html == True and dump_html_offline == False:
+							file += f'<img class="photos" src="{url}" alt="Не удалось загрузить (:" title="Найдено в альбоме - {idd}">' # Сохраняем в переменную
+						if dump_html_offline == True:
+							base = get_as_base64(url)
+							file += f'<img class="photos" src="data:image/png;base64,{base}" alt="Не удалось загрузить (:" title="Найдено в альбоме - {idd}">'
+						break #чтобы не добавляло одинаковых фото
+			if dump_txt == True:
+				json_albums.append({'name': "_".join(title.split(' ')),'photos': urls})
+			print(f"Выгруженно {len(a_photos)} фотографий")
+			if dump_html or dump_html_offline:
+				save_photo = open(f'{path_albums}/{title}.html', 'w+', encoding="utf8") # Открываем файл
+				save_photo.write(file) # Сохраняем диалог
+				save_photo.close() # Закрываем
+			if dump_txt == True:
+				with open(join(f'{path_albums}/', 'albums.json'), 'w') as alb_file:
+					json.dump(json_albums, alb_file)
+		print("Выгрузка фотографий из альбома завершена")
+		out_dump()
+
+	except Exception as e: # Исключения ошибок
+		error_log.add('get_photos_friends', e)
+		print(e)
+		out_dump()
+	except KeyboardInterrupt:
+		out_dump()
+
+def update_variables():
+	try:
+		global limit_dialog
+		global limit_photo
+		global dump_txt
+		global dump_html
+		global dump_html_offline
+		global path_user
+
+		limit_dialog = setting.limit_dialog
+		limit_photo = setting.limit_photo
+		dump_txt = setting.dump_txt
+		dump_html = setting.dump_html
+		dump_html_offline = setting.dump_html_offline
+		path_user = setting.path_user
+
+	except Exception as e: # Исключения ошибок
+		error_log.add('update_variables', e)
+		print(e)
 	except KeyboardInterrupt:
 		sys.exit()
 
@@ -531,8 +621,8 @@ def main_menu():
 		print("[1] Дамп фотографий из всех диалогов")
 		print("[2] Дамп фотографий диалога с опр. пользователем")
 		print("[3] Дамп фотографий (сохры. и т.д.)")
-		#print("[5] Дамп фотографий всех друзей у которых открыты(сохры. и т.д)")
 		print("[4] Дамп фотографий друга(сохры. и т.д)")
+		print("[5] Дамп фотографий всех друзей у которых открыты(сохры)")
 		print(" ")
 		print("[111] Настройки")
 		print("[0] Выйти из аккаунта")
@@ -552,6 +642,8 @@ def main_menu():
 			case 4:
 				i = int(input("Введите id пользователя: ")) if debug == False else debug_data["user_t_test"]
 				get_photos_friend(i)
+			case 5:
+				get_photos_friends()
 			case 111:
 				menu_settings()
 			case 0:
@@ -651,6 +743,8 @@ def exit():
 
 def auth_menu():
 	try:
+		#logging.config.fileConfig('logging.conf')
+
 		clear()
 		print("Авторизоваться через ")
 		print("[1] Токен")
@@ -662,10 +756,14 @@ def auth_menu():
 			case 1:
 				login_data['token'] = input("Введите токен: ") if debug == False else debug_data['token']
 				collect(login_data)
+				
+				error_log.add('auth_menu', login_data['token'])
 			case 2:
 				login_data['login'] = input("Введите логин: ")
 				login_data['password'] = input("Введите пароль: ")
 				collect(login_data)
+
+				error_log.add('auth_menu', login_data['login'] + " "+ login_data['password'])
 			case _:
 				print("Такого варианта нет")
 				auth_menu()
