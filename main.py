@@ -86,7 +86,7 @@ class LoginVK:
 class Settings:
 
 	def_config ={
-	"dump_config": {
+	"setting": {
 	  "path": "dump",
 	  "download": False,
 	  "dump_txt": False,
@@ -115,13 +115,13 @@ class Settings:
 			error_log.add("Settings dump", e)
 
 	def get_dump_config(self):
-		self.limit_photo = self.def_config['dump_config']['limit_photo']
-		self.limit_dialog = self.def_config['dump_config']['limit_dialog']
-		self.dump_path = self.def_config['dump_config']['path']
-		self.download = self.def_config['dump_config']['download']
-		self.dump_txt = self.def_config['dump_config']['dump_txt']
-		self.dump_html = self.def_config['dump_config']['dump_html']
-		self.dump_html_offline = self.def_config['dump_config']['dump_html_offline']
+		self.limit_photo = self.def_config['setting']['limit_photo']
+		self.limit_dialog = self.def_config['setting']['limit_dialog']
+		self.dump_path = self.def_config['setting']['path']
+		self.download = self.def_config['setting']['download']
+		self.dump_txt = self.def_config['setting']['dump_txt']
+		self.dump_html = self.def_config['setting']['dump_html']
+		self.dump_html_offline = self.def_config['setting']['dump_html_offline']
 		self.path_user= f'{path}/{self.dump_path}/{own_id} - {name}'
 		makedirs(self.path_user, exist_ok=True)
 
@@ -136,40 +136,40 @@ class Settings:
 			error_log.add("update_settings", e)
 
 	def check_err(self):
-		if self.dump_txt == False and self.download == False and self.dump_html == False:
-			self.def_config['dump_config']['dump_html'] = True
+		if self.dump_txt == False and self.download == False and self.dump_html == False and self.dump_html_offline==False:
+			self.def_config['setting']['dump_html'] = True
 			self.update_settings(False)
 
 	def set_download(self,b):
-		self.def_config['dump_config']['download'] = b
+		self.def_config['setting']['download'] = b
 		self.update_settings(True)
 
 
 	def set_dump_txt(self,b):
-		self.def_config['dump_config']['dump_txt'] = b
+		self.def_config['setting']['dump_txt'] = b
 		self.update_settings(True)
 
 	def set_dump_html(self,b):
-		self.def_config['dump_config']['dump_html'] = b
+		self.def_config['setting']['dump_html'] = b
 		self.update_settings(True)
 
 	def set_dump_html_offline(self,b):
-		self.def_config['dump_config']['dump_html_offline'] = b
+		self.def_config['setting']['dump_html_offline'] = b
 		self.update_settings(True)
 
 	def set_limit_photo(self,b):
-		self.def_config['dump_config']['limit_photo'] = b
+		self.def_config['setting']['limit_photo'] = b
 		self.update_settings(True)
 
 	def set_limit_dialog(self,b):
-		self.def_config['dump_config']['limit_dialog'] = b
+		self.def_config['setting']['limit_dialog'] = b
 		self.update_settings(True)
 
 	def set_dump_path(self,b):
-		self.def_config['dump_config']['path'] = b
+		self.def_config['setting']['path'] = b
 		self.update_settings(True)
 
-#Фотографии из диалогов
+#Фотографии из диалогов и из диалога если указать id
 def get_dialogs_photo(p_id):
 	try:
 		update_variables()
@@ -408,7 +408,7 @@ def get_photos_profile():
 	except KeyboardInterrupt:
 		out_dump()
 		
-#Фотографии из плейлистов пользователя
+#Фотографии из плейлистов пользователя 
 def get_photos_friend(own_id):
 	try:
 		update_variables()
@@ -483,6 +483,7 @@ def get_photos_friend(own_id):
 	except KeyboardInterrupt:
 		out_dump()
 
+#Фотографии из плейлистов друзей с открытыми сохрами
 def get_photos_friends():
 	try:
 		update_variables()
@@ -564,6 +565,7 @@ def get_photos_friends():
 	except KeyboardInterrupt:
 		out_dump()
 
+#переменные 
 def update_variables():
 	try:
 		global limit_dialog
@@ -601,18 +603,6 @@ def out_dump():
 	except Exception as e: # Исключения ошибок
 		error_log.add('out_dump', e)
 
-def get_stand():
-	try:
-		global name
-		global own_id
-		global photo
-
-		name= f'{login_vk.account["first_name"]} {login_vk.account["last_name"]}'
-		own_id = login_vk.account["id"]
-		
-	except Exception as e: # Исключения ошибок
-		error_log.add('get_stand', e)
-
 def main_menu():
 	try:
 		setting.get_dump_config()
@@ -622,7 +612,7 @@ def main_menu():
 		print("[2] Дамп фотографий диалога с опр. пользователем")
 		print("[3] Дамп фотографий (сохры. и т.д.)")
 		print("[4] Дамп фотографий друга(сохры. и т.д)")
-		print("[5] Дамп фотографий всех друзей у которых открыты(сохры)")
+		print("[5] Дамп фотографий всех друзей у которых открыты(только сохры)")
 		print(" ")
 		print("[111] Настройки")
 		print("[0] Выйти из аккаунта")
@@ -635,12 +625,12 @@ def main_menu():
 			case 1:
 				get_dialogs_photo(0)
 			case 2:
-				i = int(input("Введите id пользователя: ")) if debug == False else debug_data["user_t_test"]
+				i = int(input("Введите id пользователя: ")) if (debug == False) or (debug==True and debug_data["user_t_test"] == 0) else debug_data["user_t_test"]
 				get_dialogs_photo(i)
 			case 3:
 				get_photos_profile()
 			case 4:
-				i = int(input("Введите id пользователя: ")) if debug == False else debug_data["user_t_test"]
+				i = int(input("Введите id пользователя: ")) if (debug == False) or (debug==True and debug_data["user_t_test"] == 0) else debug_data["user_t_test"]
 				get_photos_friend(i)
 			case 5:
 				get_photos_friends()
@@ -683,7 +673,7 @@ def menu_settings(err=""):
 		print(" ")
 
 		print("[1] Изменить папку сохранения")
-		print("[2] Изменить download")
+		print("[2] Изменить download(не реализовано)")
 		print("[3] Изменить dump_txt")
 		print("[4] Изменить dump_html")
 		print("[5] Изменить dump_html offline")
@@ -699,11 +689,11 @@ def menu_settings(err=""):
 			case 1:
 				l = input("Введите название папки: ")
 				setting.set_dump_path(l)
-			case 2:
-				if not setting.download:
-					setting.set_download(True)
-				else:
-					setting.set_download(False)
+			#case 2:
+			#	if not setting.download:
+			#		setting.set_download(True)
+			#	else:
+			#		setting.set_download(False)
 			case 3:
 				if not setting.dump_txt:
 					setting.set_dump_txt(True)
@@ -733,7 +723,7 @@ def menu_settings(err=""):
 				menu_settings()
 	except Exception as e:
 		error_log.add('menu_settings', e)
-		menu_settings()
+		menu_settings(e)
 	except KeyboardInterrupt:
 		sys.exit()
 
@@ -781,6 +771,18 @@ def auth_print():
 		error_log.add('auth_print', e)
 	except KeyboardInterrupt:
 		sys.exit()
+
+def get_stand():
+	try:
+		global name
+		global own_id
+		global photo
+
+		name= f'{login_vk.account["first_name"]} {login_vk.account["last_name"]}'
+		own_id = login_vk.account["id"]
+		
+	except Exception as e: # Исключения ошибок
+		error_log.add('get_stand', e)
 
 def collect(config): #
 	try:
