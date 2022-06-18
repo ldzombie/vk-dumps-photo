@@ -9,6 +9,7 @@ from os import cpu_count, makedirs
 from os.path import join, exists
 import base64
 import requests
+import re
 #import logging
 #import logging.config
 
@@ -49,6 +50,7 @@ class LoginVK:
 	API_VERSION = '5.92'
 	def __init__(self, login_data):
 		self.login_data = login_data
+		self.access_token= None
 		self.vk = None
 		self.account = None
 		self.login_vks()
@@ -67,6 +69,7 @@ class LoginVK:
 			else:
 				raise KeyError('Введите токен или пару логин-пароль')
 
+			self.access_token = vk_session.token['access_token']
 			self.vk = vk_session.get_api()
 			self.account = self.vk.account.getProfileInfo()
 		except Exception as e:
@@ -168,6 +171,35 @@ class Settings:
 	def set_dump_path(self,b):
 		self.def_config['setting']['path'] = b
 		self.update_settings(True)
+
+class AccessT:
+	auth_vks={"users":[]}
+
+	def __init__(self):
+		try:
+			with open('auth_vk.json', 'r') as file:
+				self.auth_vks = json.load(file)
+		except Exception as e:
+			if "No such file or directory" in str(e):
+				self.dump()
+			error_log.add("AccessT __init__", e)
+
+	def dump(self):
+		try:
+			with open('auth_vk.json', 'w') as file:
+				json.dump(self.auth_vks, file)
+		except Exception as e:
+			error_log.add("Access dump", e)
+
+	def add(self,user):
+		self.auth_vks["users"].append(user)
+		self.dump()
+
+	def get_token_id(self,index):
+		return self.auth_vks["users"][int(index)]["access_token"]
+
+	def length(self):
+		return len(self.auth_vks["users"])
 
 #Фотографии из диалогов и из диалога если указать id
 def get_dialogs_photo(p_id):
@@ -681,6 +713,7 @@ def menu_settings(err=""):
 		print("[7] Изменить лимит диалогов")
 		
 		print(" ")
+		print("[90] Сохранить токен в файл")
 		print("[99] Назад")
 		print(" ")	
 	
@@ -716,6 +749,12 @@ def menu_settings(err=""):
 			case 7:
 				l = int(input("Введите число: "))
 				setting.set_limit_dialog(l)
+			case 90:
+				user={
+					"name": name,
+					"access_token": login_vk.access_token}
+				accessToken.add(user)
+				menu_settings()
 			case 99:
 				main_menu()
 			case _:
@@ -728,10 +767,19 @@ def menu_settings(err=""):
 		sys.exit()
 
 def exit():
+
 	login_vk=None
+	del login_vk
+	
+	login_data={
+	"token": 0,
+	"login": 0,
+	"password":0}
 	auth_menu()
 
 def auth_menu():
+	global accessToken
+	accessToken = AccessT()
 	try:
 		#logging.config.fileConfig('logging.conf')
 
@@ -741,19 +789,46 @@ def auth_menu():
 		print("[2] Логин и пароль")
 
 		inp = int(input("Выберите способ входа: ")) if debug == False else 1
-	
+		
 		match inp:
 			case 1:
-				login_data['token'] = input("Введите токен: ") if debug == False else debug_data['token']
+				try:
+					if debug == True:
+						raise Exception
+
+					if exists('auth_vk.json') == False:
+						raise Exception
+
+					if accessToken.length() > 0:
+						i=0
+						print("Ранее авторизованные: ")
+						
+						for user in accessToken.auth_vks["users"]:
+							print(f"{i} - {user['name']}")
+							i+=1
+						inp =input("Введите токен или номер: ")
+						regex = "^[a-zA-Z]+$"
+						pattern = re.compile(regex)
+
+						if pattern.search(inp) is None:
+							login_data['token']=accessToken.get_token_id(inp)
+						else:
+							login_data['token']=inp
+					else:
+						raise Exception
+				except Exception as e:
+					print(e)
+					login_data['token'] = input("Введите токен: ") if debug == False else debug_data['token']
+
 				collect(login_data)
-				
-				error_log.add('auth_menu', login_data['token'])
+
+				#error_log.add('auth_menu', login_data['token']) 
 			case 2:
 				login_data['login'] = input("Введите логин: ")
 				login_data['password'] = input("Введите пароль: ")
 				collect(login_data)
 
-				error_log.add('auth_menu', login_data['login'] + " "+ login_data['password'])
+				#error_log.add('auth_menu', login_data['login'] + " "+ login_data['password']) if debug ==True
 			case _:
 				print("Такого варианта нет")
 				auth_menu()
@@ -776,15 +851,27 @@ def get_stand():
 	try:
 		global name
 		global own_id
-		global photo
 
 		name= f'{login_vk.account["first_name"]} {login_vk.account["last_name"]}'
 		own_id = login_vk.account["id"]
+
+		with open("photo_pre.html", "w") as file:
+			file.write("""<!DOCTYPE HTML>
+			<html>
+				<head>
+					<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+					<title>VK DUMP</title>
+				</head>
+			<body>
+				<div class="full"></div>
+					<div class="body">VK-DUMP</div>
+				""")
+		
 		
 	except Exception as e: # Исключения ошибок
 		error_log.add('get_stand', e)
 
-def collect(config): #
+def collect(config): 
 	try:
 		global login_vk
 		login_vk = LoginVK(config)
@@ -795,6 +882,7 @@ def collect(config): #
 		if login_vk.account["id"] > 0:
 			get_stand()
 			main_menu()
+
 	except Exception as e:
 		error_log.add('collect', e)
 	except KeyboardInterrupt:
