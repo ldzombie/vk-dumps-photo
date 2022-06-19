@@ -819,6 +819,7 @@ def auth_menu():
         print("[2] Логин и пароль")
 
         inp = int(input("Выберите способ входа: ")) if not debug else 1
+        clear()
 
         match inp:
             case 1:
