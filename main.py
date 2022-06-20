@@ -7,6 +7,7 @@ import base64
 import requests
 import re
 import sys
+#import time
 
 path, filename = os.path.split(os.path.abspath(__file__))
 
@@ -194,9 +195,16 @@ class AccessT:
         except Exception as e:
             error_log.add("Access dump", e)
 
+    def contains(self,list, filter):
+        for x in list:
+            if filter(x):
+                return True
+        return False
+
     def add(self, user):
-        self.auth_vks["users"].append(user)
-        self.dump()
+        if not self.contains(self.auth_vks["users"], lambda x: x['access_token'] == user['access_token']):
+            self.auth_vks["users"].append(user)
+            self.dump()
 
     def get_token_id(self, index):
         return self.auth_vks["users"][int(index)]["access_token"]
@@ -815,46 +823,37 @@ def auth_menu():
 
         clear()
         print("Авторизоваться через ")
-        print("[1] Токен")
-        print("[2] Логин и пароль")
+        print("[-1] Токен")
+        print("[-2] Логин и пароль")
 
-        inp = int(input("Выберите способ входа: ")) if not debug else 1
+        try:
+            if exists('auth_vk.json') and accessToken.length() > 0:
+                i = 0
+
+                print("\nРанее авторизованные: ")
+
+                for user in accessToken.auth_vks["users"]:
+                    print(f"{i} - {user['name']}")
+                    i += 1
+                inp = int(input("\nВыберите способ входа или введите номер: ")) if not debug else -1
+
+                if inp >= 0:
+                    login_data['token'] = accessToken.get_token_id(inp)
+                    collect(login_data)
+            else:
+                inp = int(input("\nВыберите способ входа: ")) if not debug else -1
+        except Exception as e:
+            error_log.add("auth_menu accessToken",e)
+
         clear()
 
         match inp:
-            case 1:
-                try:
-                    if debug:
-                        raise Exception
-
-                    if not exists('auth_vk.json'):
-                        raise Exception
-
-                    if accessToken.length() > 0:
-                        i = 0
-                        print("Ранее авторизованные: ")
-
-                        for user in accessToken.auth_vks["users"]:
-                            print(f"{i} - {user['name']}")
-                            i += 1
-                        inp = input("Введите токен или номер: ")
-                        regex = "^[a-zA-Z]+$"
-                        pattern = re.compile(regex)
-
-                        if pattern.search(inp) is None:
-                            login_data['token'] = accessToken.get_token_id(inp)
-                        else:
-                            login_data['token'] = str(inp)
-                    else:
-                        raise Exception
-                except Exception as e:
-                    print(e)
-                    login_data['token'] = input("Введите токен: ") if not debug else debug_data['token']
-
+            case -1:
+                login_data['token'] = input("Введите токен: ") if not debug else debug_data['token']
                 collect(login_data)
 
             # error_log.add('auth_menu', login_data['token'])
-            case 2:
+            case -2:
                 login_data['login'] = str(input("Введите логин: "))
                 login_data['password'] = str(input("Введите пароль: "))
                 collect(login_data)
