@@ -7,6 +7,7 @@ import base64
 import requests
 import sys
 import argparse
+from art import tprint
 
 # import time
 
@@ -687,6 +688,9 @@ def out_dump():
 def main_menu():
     try:
         setting.get_dump_config()
+
+        tprint('Main','bulbhead')
+
         auth_print()
 
         print("[1] Дамп фотографий из всех диалогов")
@@ -738,8 +742,10 @@ def menu_settings(err=""):
         if len(err) > 0:
             c_text("red", err)
 
+        tprint('Settings','bulbhead')
+
         print(f'Папка сохранения - {setting.dump_path}')
-        print(f'download - {setting.download}')
+        print(f'download(не реализовано) - {setting.download}')
         print(f'dump_to_txt - {setting.dump_txt}')
         print(f'dump_to_html_online - {setting.dump_html}')
         print(f'dump_to_html_offline(Долгий метод) - {setting.dump_html_offline} ')
