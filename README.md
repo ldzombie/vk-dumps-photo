@@ -1,6 +1,7 @@
 # vk-dumps-photo
 
-https://img.shields.io/badge/python-3.7-green
+![Alt-текст](https://img.shields.io/badge/python-3.7-green "python 3.7")
+
 
 
 Перед работой выполнить  
