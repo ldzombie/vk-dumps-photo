@@ -14,13 +14,13 @@
 ```python main.py```
 
 #### Авторизация
-[Img 1](https://github.com/ldzombie/vk-dumps-photo/img/img_1.jpg)
+![Img 1](https://github.com/ldzombie/vk-dumps-photo/blob/main/img/img_1.jpg?raw=true)
 
 #### Главное меню
-[Img 2](https://github.com/ldzombie/vk-dumps-photo/img/img_2.jpg)
+![Img 2](https://github.com/ldzombie/vk-dumps-photo/blob/main/img/img_2.jpg?raw=true)
 
 #### Настройки
-[Img 3](https://github.com/ldzombie/vk-dumps-photo/img/img_3.jpg)
+![Img 3](https://github.com/ldzombie/vk-dumps-photo/blob/main/img/img_3.jpg?raw=true)
 
 ### 2 способ
 ```$ main.py -h
