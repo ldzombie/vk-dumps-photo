@@ -689,9 +689,9 @@ def main_menu():
     try:
         setting.get_dump_config()
 
-        tprint('Main','bulbhead')
-
         auth_print()
+
+        tprint('Main','bulbhead')
 
         print("[1] Дамп фотографий из всех диалогов")
         print("[2] Дамп фотографий диалога с опр. пользователем")
@@ -803,10 +803,16 @@ def menu_settings(err=""):
 
             case 6:
                 lim = int(input("Введите число: "))
-                setting.set_limit_photo(lim)
+                if lim > 5000:
+                    menu_settings("слишком большое число")
+                else:
+                    setting.set_limit_photo(lim)
             case 7:
                 lim = int(input("Введите число: "))
-                setting.set_limit_dialog(lim)
+                if lim > 5000:
+                    menu_settings("слишком большое число")
+                else:
+                    setting.set_limit_dialog(lim)
             case 90:
                 user = {
                     "name": name,
@@ -965,12 +971,12 @@ def get_as_base64(url):
 
 def createParser():
     pars = argparse.ArgumentParser()
-    pars.add_argument('-t', '--token', type=str, help='Token', nargs='?')
-    pars.add_argument('-l', '--login', type=str, help='Login', nargs='?')
-    pars.add_argument('-p', '--password', type=str, help='Password писать в "" ', nargs='?')
+    pars.add_argument('-t', '--token', type=str, help='Токен', nargs='?')
+    pars.add_argument('-l', '--login', type=str, help='Логин', nargs='?')
+    pars.add_argument('-p', '--password', type=str, help='Пароль писать в "" ', nargs='?')
     pars.add_argument('-sp', '--setpath', type=str, help='Название папки для сохранения', nargs='?')
     pars.add_argument('-sd', '--setdumpmethod', type=str, choices=['txt', 'offline', 'online'],
-                      help='Метод сохранения данных', nargs='?')
+                      help='Метод сохранения данных, offline-фотографии доступны без интернета', nargs='?')
     pars.add_argument('-slp', '--setlimitphoto', type=int, help='Лимит фотографий', nargs='?')
     pars.add_argument('-sld', '--setlimitdialog', type=int, help='Лимит диалогов', nargs='?')
     pars.add_argument('-st', '--savetoken', help='Сохранить токен', action='store_const', const=True)
@@ -1018,9 +1024,11 @@ def option_parser(argv):
                     setting.set_dump_html(True, bol=False)
                     setting.set_dump_html_offline(False, bol=False)
             if argv.setlimitphoto:
-                setting.set_limit_photo(argv.setlimitphoto, bol=False)
+                if argv.setlimitphoto < 5000:
+                    setting.set_limit_photo(argv.setlimitphoto, bol=False)
             if argv.setlimitdialog:
-                setting.set_limit_photo(argv.setlimitdialog, bol=False)
+                if argv.setlimitdialog < 5000:
+                    setting.set_limit_photo(argv.setlimitdialog, bol=False)
             if argv.savetoken:
                 us = {
                     "name": name,
