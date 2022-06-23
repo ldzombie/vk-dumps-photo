@@ -54,3 +54,5 @@ options:
                         
   -u , --user           id пользователя для методов 2,4
   ```
+Пример 
+```python main.py -t token -sp dump -slp 500 -sld 50 -st -m 1 4 -u 123456786 ```
