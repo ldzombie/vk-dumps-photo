@@ -1,6 +1,6 @@
 # vk-dumps-photo
 
-![Alt-текст](https://img.shields.io/badge/python-3.7-green "python 3.7")
+![Python: 3.7](https://img.shields.io/badge/python-3.7-green "python 3.7")(https://www.python.org/)
 
 
 
