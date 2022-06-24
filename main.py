@@ -989,19 +989,20 @@ def createParser():
 
 def option_parser(argv):
     try:
-
+        if not login_vk:
+            if argv.token and not argv.login and not argv.password:
+                login_data['token'] = argv.token
+                collect(True, login_data)
+            elif argv.login and argv.password and not argv.token:
+                login_data['login'] = str(argv.login)
+                login_data['password'] = str(argv.password)
+                collect(True, login_data)
+            else:
+                raise Exception("Authorization data is not specified, or it is specified incorrectly")
         if not argv.method:
             raise Exception("Method not specified -m [1;2;3;4;5]")
-
-        if argv.token and not argv.login and not argv.password:
-            login_data['token'] = argv.token
-            collect(True, login_data)
-        elif argv.login and argv.password and not argv.token:
-            login_data['login'] = str(argv.login)
-            login_data['password'] = str(argv.password)
-            collect(True, login_data)
-        else:
-            raise Exception("Authorization data is not specified, or it is specified incorrectly")
+        
+        
 
         print("Auth success")
 
