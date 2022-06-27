@@ -25,7 +25,7 @@
 ### 2 способ
 ```$ main.py -h
 usage: main.py [-h] [-t [TOKEN]] [-l [LOGIN]] [-p [PASSWORD]] [-sp [SETPATH]] [-sd [{txt,offline,online}]]
-               [-slp [SETLIMITPHOTO]] [-sld [SETLIMITDIALOG]] [-st] [-m METHOD [METHOD ...]] [-u [USER]]
+               [-slp [SETLIMITPHOTO]] [-sld [SETLIMITDIALOG]] [-st] [-m METHOD [METHOD ...]] [-u [USER]] [-os]
 
 --------------------------------------------------------------------------
 https://github.com/ldzombie/vk-dumps-photo/
@@ -53,6 +53,8 @@ options:
                         опр. пользователя 5-сохры всех друзей у которых открыты  
                         
   -u , --user           id пользователя для методов 2,4
+  
+  -os , --onlysaved     (default:True) в методах 1-5, берется только альбом с сохрами
   ```
 Пример   
 ```python main.py -t token -sp dump -slp 500 -sld 50 -st -m 1 4 -u 123456786 ```
