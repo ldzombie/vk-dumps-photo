@@ -25,7 +25,7 @@
 ### 2 способ
 ```$ main.py -h
 usage: main.py [-h] [-t [TOKEN]] [-l [LOGIN]] [-p [PASSWORD]] [-sp [SETPATH]] [-sd [{txt,offline,online}]]
-               [-slp [SETLIMITPHOTO]] [-sld [SETLIMITDIALOG]] [-st] [-m METHOD [METHOD ...]] [-u [USER]] [-os]
+               [-slp [SETLIMITPHOTO]] [-sld [SETLIMITDIALOG]] [-su] [-ru] [-m METHOD [METHOD ...]] [-u [USER]] [-os]
 
 --------------------------------------------------------------------------
 https://github.com/ldzombie/vk-dumps-photo/
@@ -47,7 +47,9 @@ options:
   
   -sld,--setlimitdialog Лимит диалогов
   
-  -st, --savetoken      Сохранить токен  
+  -su, --saveuser       Сохранить пользователя  
+  
+  -ru, --removeuser     Удалить пользователя 
   
   -m, --method          1-фотографии из всех диалогов 2-фотографии из опр. диалога 3-фото из плейлистов 4-плейлисты
                         опр. пользователя 5-сохры всех друзей у которых открыты  
@@ -57,4 +59,4 @@ options:
   -os , --onlysaved     (default:True) в методах 1-5, берется только альбом с сохрами
   ```
 Пример   
-```python main.py -t token -sp dump -slp 500 -sld 50 -st -m 1 4 -u 123456786 ```
+```python main.py -t token -sp dump -slp 500 -sld 50 -su -m 1 4 -u 123456786 ```
