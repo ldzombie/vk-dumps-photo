@@ -25,7 +25,7 @@
 ### 2 способ
 ```$ main.py -h
 usage: main.py [-h] [-t [TOKEN]] [-l [LOGIN]] [-p [PASSWORD]] [-sp [SETPATH]] [-sd [{txt,offline,online}]]
-               [-slp [SETLIMITPHOTO]] [-sld [SETLIMITDIALOG]] [-st] [-m METHOD [METHOD ...]] [-u [USER]] [-os]
+               [-slp [SETLIMITPHOTO]] [-sld [SETLIMITDIALOG]] [-su] [-ru] [-m METHOD [METHOD ...]] [-u [USER]] [-os]
 
 --------------------------------------------------------------------------
 https://github.com/ldzombie/vk-dumps-photo/
