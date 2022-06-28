@@ -31,6 +31,18 @@ login_data = {
     "login": "",
     "password": ""}
 
+# globals
+limit_dialog = 0
+limit_photo = 0
+dump_txt = False
+dump_html = True
+dump_html_offline = False
+path_user = ""
+login_vk = None
+setting = None
+name = ""
+own_id = 0
+
 
 class ErrorLog:
     def __init__(self):
@@ -52,6 +64,7 @@ class ErrorLog:
 error_log = ErrorLog()
 
 
+# Отвечает за авторизацию
 class LoginVK:
     API_VERSION = '5.92'
 
@@ -74,7 +87,7 @@ class LoginVK:
                                           scope="65536", app_id=2685278)
                 vk_session.auth(token_only=True, reauth=True)
             else:
-                raise KeyError('Введите токен или пару логин-пароль')
+                raise KeyError('Введите токен или логин-пароль')
 
             self.access_token = vk_session.token['access_token']
             self.vk = vk_session.get_api()
@@ -94,6 +107,7 @@ class LoginVK:
         return captcha.try_again(key)
 
 
+# Класс всех настроек
 class Settings:
     def_config = {
         "setting": {
@@ -107,17 +121,18 @@ class Settings:
         }}
 
     def __init__(self):
+        self.dump_path = None
         try:
             with open('config.json', 'r') as config_file:
                 self.def_config = json.load(config_file)
         # auth_menu()
         except Exception as e:
             if "No such file or directory" in str(e):
-                self.dump_defconfig()
+                self.dump_config()
             # auth_menu()
             error_log.add("Settings __init__", e)
 
-    def dump_defconfig(self):
+    def dump_config(self):
         try:
             with open('config.json', 'w') as config_file:
                 json.dump(self.def_config, config_file)
@@ -125,19 +140,28 @@ class Settings:
             error_log.add("Settings dump", e)
 
     def get_dump_config(self):
-        self.limit_photo = self.def_config['setting']['limit_photo']
-        self.limit_dialog = self.def_config['setting']['limit_dialog']
+        global limit_dialog
+        global limit_photo
+        # global download
+        global dump_txt
+        global dump_html
+        global dump_html_offline
+        global path_user
+
         self.dump_path = self.def_config['setting']['path']
-        self.download = self.def_config['setting']['download']
-        self.dump_txt = self.def_config['setting']['dump_txt']
-        self.dump_html = self.def_config['setting']['dump_html']
-        self.dump_html_offline = self.def_config['setting']['dump_html_offline']
-        self.path_user = f'{path}/{self.dump_path}/{own_id} - {name}'
-        makedirs(self.path_user, exist_ok=True)
+
+        limit_photo = self.def_config['setting']['limit_photo']
+        limit_dialog = self.def_config['setting']['limit_dialog']
+        # download = self.def_config['setting']['download']
+        dump_txt = self.def_config['setting']['dump_txt']
+        dump_html = self.def_config['setting']['dump_html']
+        dump_html_offline = self.def_config['setting']['dump_html_offline']
+        path_user = f'{path}/{self.dump_path}/{own_id} - {name}'
+        makedirs(path_user, exist_ok=True)
 
     def update_settings(self, bol):
         try:
-            self.dump_defconfig()
+            self.dump_config()
             self.get_dump_config()
             if bol:
                 menu_settings()
@@ -145,9 +169,15 @@ class Settings:
             error_log.add("update_settings", e)
 
     def check_err(self):
-        if not self.dump_txt and not self.download and not self.dump_html and not self.dump_html_offline:
+        if not dump_txt and not dump_html and not dump_html_offline: # and not download
             self.def_config['setting']['dump_html'] = True
-            self.update_settings(False)
+        if limit_photo > 5000:
+            self.def_config['setting']['limit_photo'] = 5000
+        if limit_dialog > 1000:
+            self.def_config['setting']['limit_dialog'] = 1000
+        if not self.dump_path:
+            self.def_config['setting']['path'] = "dump"
+        self.update_settings(False)
 
     def set_download(self, b, bol=True):
         self.def_config['setting']['download'] = b
@@ -178,6 +208,7 @@ class Settings:
         self.update_settings(bol)
 
 
+# Класс отвечающий за управление данными сохраненых пользователей
 class AccessT:
     auth_vks = {"users": []}
 
@@ -186,8 +217,8 @@ class AccessT:
             with open('auth_vk.json', 'r') as file:
                 self.auth_vks = json.load(file)
         except Exception as e:
-            if "No such file or directory" in str(e):
-                self.dump()
+            # if "No such file or directory" in str(e):
+            #    self.dump()
             error_log.add("AccessT __init__", e)
 
     def dump(self):
@@ -197,9 +228,9 @@ class AccessT:
         except Exception as e:
             error_log.add("Access dump", e)
 
-    def contains(self, list, filter):
-        for x in list:
-            if filter(x):
+    def contains(self, lis, fil):
+        for x in lis:
+            if fil(x):
                 return True
         return False
 
@@ -209,7 +240,7 @@ class AccessT:
             self.dump()
 
     def remove(self, user):
-        if self.contains(self.auth_vks["users"], lambda x: x['name'] == user['name']):
+        if self.contains(self.auth_vks["users"], lambda x: x['access_token'] == user['access_token']):
             self.auth_vks["users"].remove(user)
             self.dump()
 
@@ -223,8 +254,6 @@ class AccessT:
 # Фотографии из диалогов
 def get_dialogs_photo(p_id, hide=False):
     try:
-        update_variables()
-
         if dump_html or dump_html_offline:
             file = open(f'{path}/photo_pre.html', 'r', encoding="utf8").read()
         if dump_txt:
@@ -316,7 +345,7 @@ def get_dialogs_photo(p_id, hide=False):
                                 else:
                                     break
                                 length_all = len(a_photo)
-                                # Проверка на то нужно ли делать ещё один цикл, и не превышает ли фисло фотографий лимит
+                                # Проверка на то нужно ли делать ещё один цикл, и не превышает ли число фотографий лимит
                                 if length == 200 and length_all < limit_photo or length == 200 and limit_photo == 0:
                                     offset = fo1["next_from"]
                                 else:
@@ -351,7 +380,7 @@ def get_dialogs_photo(p_id, hide=False):
                     if dump_txt:
                         dialogs.append({'name': '_'.join(fio), 'photos': urls})
                         urls = []
-                    print(f"[+]Выгруженно {len(a_photo)} фотографий")
+                    c_text("green", f"[+]Выгруженно {len(a_photo)} фотографий")
                 else:
                     print("Это группа!")
             else:
@@ -365,7 +394,7 @@ def get_dialogs_photo(p_id, hide=False):
             with open(join(f'{path_dialog}', file_name), 'w') as alb_file:
                 json.dump(dialogs, alb_file)
 
-        print("\nВыгрузка фотографий из диалогов завершена")
+        c_text("purple", "\nВыгрузка фотографий из диалогов завершена")
         if not hide:
             out_dump()
     except Exception as e:  # Исключения ошибок
@@ -381,7 +410,6 @@ def get_dialogs_photo(p_id, hide=False):
 # Фотографии из плейлистов пользователя по id
 def get_photos_friend(user_id, onlySaved=True, hide=False):
     try:
-        update_variables()
 
         if dump_html or dump_html_offline:
             file = open(f'{path}/photo_pre.html', 'r', encoding="utf8").read()
@@ -439,7 +467,7 @@ def get_photos_friend(user_id, onlySaved=True, hide=False):
             if dump_txt:
                 json_albums.append({'name': "_".join(title.split(' ')), 'photos': urls})
 
-            print(f"[+]Выгруженно {len(a_photos)} фотографий")
+            c_text("green", f"[+]Выгруженно {len(a_photos)} фотографий")
             if dump_html or dump_html_offline:
                 save_photo = open(f'{path_albums}/{title}.html', 'w+', encoding="utf8")  # Открываем файл
                 save_photo.write(file)  # Сохраняем диалог
@@ -447,7 +475,7 @@ def get_photos_friend(user_id, onlySaved=True, hide=False):
         if dump_txt:
             with open(join(f'{path_albums}/', 'albums.json'), 'w') as alb_file:
                 json.dump(json_albums, alb_file)
-        print("\nВыгрузка фотографий из альбомов завершена")
+        c_text("purple", "\nВыгрузка фотографий из альбомов завершена")
         if not hide:
             out_dump()
     except Exception as e:  # Исключения ошибок
@@ -461,9 +489,8 @@ def get_photos_friend(user_id, onlySaved=True, hide=False):
 
 
 # Фотографии из плейлистов друзей с открытыми сохрами
-def get_photos_friends(hide=False, onlySaved=True):
+def get_photos_friends(onlySaved=True, hide=False):
     try:
-        update_variables()
         if debug:
             deb_count = 0
         friends = login_vk.vk.friends.get(fields="1", order="hints", name_case="nom", count=250)
@@ -521,7 +548,7 @@ def get_photos_friends(hide=False, onlySaved=True):
                         break  # чтобы не добавляло одинаковых фото
             if dump_txt:
                 json_albums.append({'name': "_".join(title.split(' ')), 'photos': urls})
-            print(f"[+]Выгруженно {len(a_photos)} фотографий")
+            c_text("green", f"[+]Выгруженно {len(a_photos)} фотографий")
             if dump_html or dump_html_offline:
                 save_photo = open(f'{path_albums}/{title}.html', 'w+', encoding="utf8")  # Открываем файл
                 save_photo.write(file)  # Сохраняем диалог
@@ -529,7 +556,7 @@ def get_photos_friends(hide=False, onlySaved=True):
             if dump_txt:
                 with open(join(f'{path_albums}/', 'albums.json'), 'w') as alb_file:
                     json.dump(json_albums, alb_file)
-        print("\nВыгрузка фотографий из альбома завершена")
+        c_text("purple", "\nВыгрузка фотографий из альбома завершена")
         if not hide:
             out_dump()
 
@@ -543,9 +570,12 @@ def get_photos_friends(hide=False, onlySaved=True):
             out_dump()
 
 
+# Метод для получения всех фотографий из альбома
 def get_album_photo(user_id, album_id, siz):
     if limit_photo == 0 or limit_photo > 1000:
-        al_photos = login_vk.vk.photos.get(owner_id=user_id, album_id=album_id, photo_sizes=1, rev=1, count=1000, offset=0)["items"]
+        al_photos = \
+            login_vk.vk.photos.get(owner_id=user_id, album_id=album_id, photo_sizes=1, rev=1, count=1000, offset=0)[
+                "items"]
         if len(al_photos) == 1000:
             if siz > 4000:
                 siz = 4000
@@ -568,44 +598,20 @@ def get_album_photo(user_id, album_id, siz):
                     al_photos += fo1
                 else:
                     break
-                if (length > 0 and len(al_photos) < siz) and (len(al_photos) < limit_photo or limit_photo == 0) :
+                if (length > 0 and len(al_photos) < siz) and (len(al_photos) < limit_photo or limit_photo == 0):
                     offset += 1000
                 else:
                     break
     else:
-        al_photos = login_vk.vk.photos.get(owner_id=user_id, album_id=album_id, photo_sizes=1, rev=1, count=1000)["items"]
+        al_photos = login_vk.vk.photos.get(owner_id=user_id, album_id=album_id, photo_sizes=1, rev=1, count=1000)[
+            "items"]
     return al_photos
 
 
-# переменные
-def update_variables():
-    try:
-        global limit_dialog
-        global limit_photo
-        global dump_txt
-        global dump_html
-        global dump_html_offline
-        global path_user
-
-        limit_dialog = setting.limit_dialog
-        limit_photo = setting.limit_photo
-        dump_txt = setting.dump_txt
-        dump_html = setting.dump_html
-        dump_html_offline = setting.dump_html_offline
-        path_user = setting.path_user
-
-    except Exception as e:  # Исключения ошибок
-        error_log.add('update_variables', e)
-        print(e)
-    except KeyboardInterrupt:
-        sys.exit()
-
-
+# Выводится после выполнения метода
 def out_dump():
     try:
-        print(" ")
-        print("[99] Назад")
-        print(" ")
+        print("\n[99] Назад\n")
         inp = int(input("Ввод: "))
         match inp:
             case 99:
@@ -617,8 +623,10 @@ def out_dump():
         error_log.add('out_dump', e)
 
 
+# Главное меню
 def main_menu():
     try:
+        # Получение настроек из файла или его создание если файла нет
         setting.get_dump_config()
 
         auth_print()
@@ -633,19 +641,21 @@ def main_menu():
         print("\n[111] Настройки")
         print("[0] Выйти из аккаунта")
 
-        setting.check_err()
+        setting.check_err()  # Проверяет настройки на ошибки
 
         inp = int(input("\nВвод: "))
         match inp:
             case 1:
                 get_dialogs_photo(0)
             case 2:
-                i = int(input("Введите id пользователя: ")) if not debug and debug_data["user_t_test"] == 0 else debug_data["user_t_test"]
+                i = int(input("Введите id пользователя: ")) if not debug and debug_data["user_t_test"] == 0 else \
+                    debug_data["user_t_test"]
                 get_dialogs_photo(i)
             case 3:
                 get_photos_friend(0)
             case 4:
-                i = int(input("Введите id пользователя: ")) if not debug and debug_data["user_t_test"] == 0 else debug_data["user_t_test"]
+                i = int(input("Введите id пользователя: ")) if not debug and debug_data["user_t_test"] == 0 else \
+                    debug_data["user_t_test"]
                 get_photos_friend(i)
             case 5:
                 get_photos_friends()
@@ -663,6 +673,7 @@ def main_menu():
         sys.exit()
 
 
+# Меню настроек
 def menu_settings(err=""):
     try:
         auth_print()
@@ -673,23 +684,23 @@ def menu_settings(err=""):
         tprint('Settings', 'bulbhead')
 
         print(f'Папка сохранения - {setting.dump_path}')
-        print(f'download(не реализовано) - {setting.download}')
-        print(f'dump_to_txt - {setting.dump_txt}')
-        print(f'dump_to_html_online - {setting.dump_html}')
-        print(f'dump_to_html_offline(Долгий метод) - {setting.dump_html_offline} ')
+        # print(f'download(не реализовано) - {download}')
+        print(f'dump_to_txt - {dump_txt}')
+        print(f'dump_to_html_online - {dump_html}')
+        print(f'dump_to_html_offline(Долгий метод) - {dump_html_offline} ')
 
-        if setting.limit_photo == 0:
+        if limit_photo == 0:
             print(f'Лимит фотографий - нет')
         else:
-            print(f'Лимит фотографий - {setting.limit_photo}')
+            print(f'Лимит фотографий - {limit_photo}')
 
-        if setting.limit_dialog == 0:
+        if limit_dialog == 0:
             print(f'Лимит диалогов - нет')
         else:
-            print(f'Лимит диалогов - {setting.limit_dialog}')
+            print(f'Лимит диалогов - {limit_dialog}')
 
         print("\n[1] Изменить папку сохранения")
-        print("[2] Изменить download(не реализовано)")
+        c_text("red", "[2] Изменить download(не реализовано)")
         print("[3] Изменить dump_txt")
         print("[4] Изменить dump_html")
         print("[5] Изменить dump_html offline")
@@ -697,7 +708,8 @@ def menu_settings(err=""):
         print("[7] Изменить лимит диалогов")
 
         print("\n[90] Сохранить токен в файл")
-        print("[99] Назад")
+        print("[91] Удалить сохраненного пользователя")
+        print("\n[99] Назад")
 
         inp = int(input("\nВвод: "))
         match inp:
@@ -710,17 +722,17 @@ def menu_settings(err=""):
             #	else:
             #		setting.set_download(False)
             case 3:
-                if not setting.dump_txt:
+                if not dump_txt:
                     setting.set_dump_txt(True)
                 else:
                     setting.set_dump_txt(False)
             case 4:
-                if not setting.dump_html:
+                if not dump_html:
                     setting.set_dump_html(True)
                 else:
                     setting.set_dump_html(False)
             case 5:
-                if not setting.dump_html_offline:
+                if not dump_html_offline:
                     setting.set_dump_html_offline(True)
                 else:
                     setting.set_dump_html_offline(False)
@@ -743,6 +755,12 @@ def menu_settings(err=""):
                     "access_token": login_vk.access_token}
                 accessToken.add(user)
                 menu_settings()
+            case 91:
+                user = {
+                    "name": name,
+                    "access_token": login_vk.access_token}
+                accessToken.remove(user)
+                menu_settings()
             case 99:
                 main_menu()
             case _:
@@ -755,6 +773,7 @@ def menu_settings(err=""):
         sys.exit()
 
 
+# Выход из аккаунта
 def clean_exit():
     global login_vk
     login_vk = None
@@ -767,6 +786,7 @@ def clean_exit():
     auth_menu()
 
 
+# Вход
 def auth_menu():
     try:
         # logging.config.fileConfig('logging.conf')
@@ -828,6 +848,7 @@ def auth_print():
         sys.exit()
 
 
+# Устанавливает name и own_id
 def get_stand():
     try:
         global name
@@ -852,6 +873,7 @@ def get_stand():
         error_log.add('get_stand', e)
 
 
+# Инициализирует вход и чтение настроек
 def collect(hide, config):
     try:
         global login_vk
@@ -860,11 +882,13 @@ def collect(hide, config):
         global setting
         setting = Settings()
 
-        if login_vk.account["id"] > 0 and not hide:
+        if login_vk.account["id"] > 0:
             get_stand()
-            main_menu()
         else:
-            get_stand()
+            raise Exception
+
+        if not hide:
+            main_menu()
 
     except Exception as e:
         error_log.add('collect', e)
@@ -876,7 +900,19 @@ def c_text(col, text):
     try:
         match col:
             case "red":
-                color = '\033[91m'
+                color = '\033[31m'
+            case "green":
+                color = '\033[32m'
+            case "blue":
+                color = '\033[34m'
+            case "yellow":
+                color = '\033[33m'
+            case "purple":
+                color = '\033[35m'
+            case "cyan":
+                color = '\033[36m'
+            case "gray":
+                color = '\033[37m'
             case _:
                 color = '\033[91m'
 
@@ -892,7 +928,8 @@ def get_as_base64(url):
     return base64.b64encode(requests.get(url).content).decode('utf-8')
 
 
-def createParser():
+# Парсер аргументов
+def create_parser():
     pars = argparse.ArgumentParser()
     pars.add_argument('-t', '--token', type=str, help='Токен', nargs='?')
     pars.add_argument('-l', '--login', type=str, help='Логин', nargs='?')
@@ -902,15 +939,18 @@ def createParser():
                       help='Метод сохранения данных, offline-фотографии доступны без интернета', nargs='?')
     pars.add_argument('-slp', '--setlimitphoto', type=int, help='Лимит фотографий', nargs='?')
     pars.add_argument('-sld', '--setlimitdialog', type=int, help='Лимит диалогов', nargs='?')
-    pars.add_argument('-st', '--savetoken', help='Сохранить токен', action='store_true')
+    pars.add_argument('-su', '--saveuser', help='Сохранить пользователя', action='store_true')
+    pars.add_argument('-ru', '--removeuser', help='Удалить пользователя', action='store_true')
     pars.add_argument('-m', '--method', type=int,
-                      help='1-фотографии из всех диалогов\n 2-фотографии из опр. диалога \n 3-фото из плейлистов \n 4-плейлисты опр. пользователя \n 5-сохры всех друзей у которых открыты',
+                      help='1 - Фотографии из всех диалогов\n 2 - Фотографии из опр. диалога \n 3 - Фото из плейлистов \n 4 - Плейлисты опр. пользователя \n 5 - Сохры всех друзей у которых открыты',
                       nargs='+')
     pars.add_argument('-u', '--user', type=int, help='id пользователя для методов 2,4', nargs='?')
-    pars.add_argument('-os', '--onlysaved', help='(default:True) в методах 1-5, берется только альбом с сохрами', action='store_false')
+    pars.add_argument('-os', '--onlysaved', help='(default:True) в методах 1-5, берётся только альбом с сохрами',
+                      action='store_false')
     return pars
 
 
+# Функции аргументов
 def option_parser(argv):
     try:
 
@@ -927,7 +967,7 @@ def option_parser(argv):
 
         print("Auth success")
 
-        if argv.setpath or argv.setdumpmethod or argv.setlimitphoto or argv.setlimitdialog or argv.savetoken:
+        if argv.setpath or argv.setdumpmethod or argv.setlimitphoto or argv.setlimitdialog or argv.saveuser or argv.removeuser:
             setting.get_dump_config()
             setting.check_err()
             if argv.setpath:
@@ -946,16 +986,21 @@ def option_parser(argv):
                     setting.set_dump_html(True, bol=False)
                     setting.set_dump_html_offline(False, bol=False)
             if argv.setlimitphoto:
-                if argv.setlimitphoto < 4000:
+                if argv.setlimitphoto <= 5000:
                     setting.set_limit_photo(argv.setlimitphoto, bol=False)
             if argv.setlimitdialog:
-                if argv.setlimitdialog < 4000:
+                if argv.setlimitdialog <= 1000:
                     setting.set_limit_photo(argv.setlimitdialog, bol=False)
-            if argv.savetoken:
+            if argv.saveuser and not argv.removeuser:
                 us = {
                     "name": name,
                     "access_token": login_vk.access_token}
                 accessToken.add(us)
+            if argv.removeuser and not argv.saveuser:
+                us = {
+                    "name": name,
+                    "access_token": login_vk.access_token}
+                accessToken.remove(us)
 
         if not argv.method:
             raise Exception("Method not specified -m [1;2;3;4;5]")
@@ -972,7 +1017,7 @@ def option_parser(argv):
                             get_dialogs_photo(argv.user, hide=True)
                     case 3:
                         print(f"\n")
-                        get_photos_friend(0,  onlySaved=argv.onlysaved, hide=True)
+                        get_photos_friend(0, onlySaved=argv.onlysaved, hide=True)
                     case 4:
                         if argv.user:
                             print(f"\n")
@@ -997,8 +1042,8 @@ if __name__ == '__main__':
         if len(sys.argv) == 1:
             auth_menu()
         else:
-            parser = createParser()
-            #print(parser.parse_args(sys.argv[1:]))
+            parser = create_parser()
+            # print(parser.parse_args(sys.argv[1:]))
             option_parser(parser.parse_args(sys.argv[1:]))
         error_log.save_log('error.log')
     except Exception as e:
