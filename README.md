@@ -1,6 +1,6 @@
 # vk-dumps-photo
 
-[![Python: 3.7](https://img.shields.io/badge/python-3.7-green "python 3.7")](https://www.python.org/)
+[![Python: 3.7](https://img.shields.io/badge/python-3.10.4-green "python 3.7")](https://www.python.org/)
 [![PyPI](https://img.shields.io/pypi/v/vk_api.svg "Vk_api")]([https://www.python.org/](https://pypi.org/project/vk-api/))
 
 ## Установка
