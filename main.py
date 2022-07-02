@@ -29,8 +29,10 @@ dump_txt = False
 dump_html = True
 dump_html_offline = False
 path_user = ""
+
 login_vk = None
 setting = None
+
 name = ""
 own_id = 0
 
@@ -151,7 +153,7 @@ class Settings:
         path_user = f'{path}/{self.dump_path}/{own_id} - {name}'
         makedirs(path_user, exist_ok=True)
 
-    def update_settings(self, bol):
+    def update_settings(self, bol: bool):
         try:
             self.dump_config()
             self.get_dump_config()
@@ -171,37 +173,29 @@ class Settings:
             self.def_config['setting']['path'] = "dump"
         self.update_settings(False)
 
-    def set_download(self, b, bol=True):
-        self.def_config['setting']['download'] = b
+    # def set_download(self, b, bol=True):
+    #     self.def_config['setting']['download'] = b
+    #     self.update_settings(bol)
+
+    def set_dump(self, key: str, b: bool, bol=True):
+        self.def_config['setting'][key] = b
         self.update_settings(bol)
 
-    def set_dump_txt(self, b, bol=True):
-        self.def_config['setting']['dump_txt'] = b
-        self.update_settings(bol)
-
-    def set_dump_html(self, b, bol=True):
-        self.def_config['setting']['dump_html'] = b
-        self.update_settings(bol)
-
-    def set_dump_html_offline(self, b, bol=True):
-        self.def_config['setting']['dump_html_offline'] = b
-        self.update_settings(bol)
-
-    def set_limit_photo(self, b, bol=True):
+    def set_limit_photo(self, b: int, bol=True):
         if b > self.limits[0]:
             menu_settings("слишком большое число")
         else:
             self.def_config['setting']['limit_photo'] = b
             self.update_settings(bol)
 
-    def set_limit_dialog(self, b, bol=True):
+    def set_limit_dialog(self, b: int, bol=True):
         if b > self.limits[1]:
             menu_settings("слишком большое число")
         else:
             self.def_config['setting']['limit_dialog'] = b
             self.update_settings(bol)
 
-    def set_dump_path(self, b, bol=True):
+    def set_dump_path(self, b: str, bol=True):
         self.def_config['setting']['path'] = b
         self.update_settings(bol)
 
@@ -212,10 +206,9 @@ class AccessT:
     name_file = "auth_vk.json"
 
     def __init__(self):
-        if exists(name_file):
-            with open(name_file, 'r') as file:
+        if exists(self.name_file):
+            with open(self.name_file, 'r') as file:
                 self.auth_vks = json.load(file)
-
 
     def dump(self):
         try:
@@ -240,7 +233,7 @@ class AccessT:
             self.auth_vks["users"].remove(user)
             self.dump()
 
-    def get_token_id(self, index):
+    def get_token_id(self, index: int):
         return self.auth_vks["users"][int(index)]["access_token"]
 
     def length(self):
@@ -248,7 +241,7 @@ class AccessT:
 
 
 # Фотографии из диалогов
-def get_dialogs_photo(p_id: int, hide=False):
+def get_dialogs_photo(p_id: int, hide: bool = False):
     try:
         if dump_html or dump_html_offline:
             imgs = ""
@@ -402,7 +395,7 @@ def get_dialogs_photo(p_id: int, hide=False):
 
 
 # Фотографии из плейлистов пользователя по id
-def get_photos_friend(user_id: int, onlySaved=True, hide=False):
+def get_photos_friend(user_id: int, onlySaved: bool = True, hide: bool = False):
     try:
         if user_id == 0:
             user_id = own_id
@@ -486,7 +479,7 @@ def get_photos_friend(user_id: int, onlySaved=True, hide=False):
 
 
 # Фотографии из плейлистов друзей с открытыми сохрами
-def get_photos_friends(onlySaved=True, hide=False):
+def get_photos_friends(onlySaved: bool = True, hide: bool = False):
     try:
         friends = login_vk.vk.friends.get(fields="1", order="hints", name_case="nom", count=250)
         print("Общее количество пользователей: " + str(friends['count']))
@@ -564,7 +557,7 @@ def get_photos_friends(onlySaved=True, hide=False):
 
 
 # Метод для получения всех фотографий из альбома
-def get_album_photo(user_id, album_id, siz: int) -> list:
+def get_album_photo(user_id: int, album_id: int, siz: int) -> list:
     if limit_photo == 0 or limit_photo > 1000:
         al_photos = login_vk.vk.photos.get(owner_id=user_id,
                                            album_id=album_id,
@@ -674,11 +667,11 @@ def menu_settings(err=""):
     try:
         auth_print()
 
+        tprint('Settings', 'bulbhead')
+
         if len(err) > 0:
             c_text("red", err)
             err = ""
-
-        tprint('Settings', 'bulbhead')
 
         print(f'Папка сохранения - {setting.dump_path}')
         # print(f'download(не реализовано) - {download}')
@@ -719,19 +712,19 @@ def menu_settings(err=""):
             #		setting.set_download(False)
             case 3:
                 if not dump_txt:
-                    setting.set_dump_txt(True)
+                    setting.set_dump("dump_txt", True)
                 else:
-                    setting.set_dump_txt(False)
+                    setting.set_dump("dump_txt", False)
             case 4:
                 if not dump_html:
-                    setting.set_dump_html(True)
+                    setting.set_dump("dump_html", True)
                 else:
-                    setting.set_dump_html(False)
+                    setting.set_dump("dump_html", False)
             case 5:
                 if not dump_html_offline:
-                    setting.set_dump_html_offline(True)
+                    setting.set_dump("dump_html_offline", True)
                 else:
-                    setting.set_dump_html_offline(False)
+                    setting.set_dump("dump_html_offline", False)
 
             case 6:
                 setting.set_limit_photo(int(input("Введите число: ")))
@@ -863,7 +856,7 @@ def get_stand():
 
 
 # Инициализирует вход и чтение настроек
-def collect(hide, config):
+def collect(hide: bool, config: login_data):
     try:
         global login_vk
         login_vk = LoginVK(config)
