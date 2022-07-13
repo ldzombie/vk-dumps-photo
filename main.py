@@ -90,7 +90,7 @@ class LoginVK:
 
     @staticmethod
     def auth_handler():
-        key = input('Введите код двухфакторой аутентификации: ')
+        key = input('Введите код двухфакторой аутентификации: ').strip()
         remember_device = True
         return key, remember_device
 
@@ -234,7 +234,7 @@ class AccessT:
             self.dump()
 
     def get_token_id(self, index: int):
-        return self.auth_vks["users"][int(index)]["access_token"]
+        return self.auth_vks["users"][index]["access_token"]
 
     def length(self):
         return len(self.auth_vks["users"])
@@ -281,7 +281,7 @@ def get_dialogs_photo(p_id: int, hide: bool = False):
 
         path_dialog = f'{path_user}/dialog'
 
-        makedirs(f'{path_dialog}', exist_ok=True)
+
 
         for dialog in all_dialogs:  # Идем по списку
             if p_id > 0:
@@ -359,6 +359,7 @@ def get_dialogs_photo(p_id: int, hide: bool = False):
                                 break  # чтобы не сохраняло одинаковые фотографии разного размера
                     if dump_html or dump_html_offline:
                         try:
+                            makedirs(f'{path_dialog}', exist_ok=True)
                             with (open(f'{path_dialog}/{idd} - {fio}.html', 'w+', encoding="utf8") as save_photo,
                                   open(f'{path}/photo_pre.html', 'r', encoding="utf8") as photo_pre):
                                 save_photo.write(photo_pre.read() + imgs)
@@ -420,7 +421,6 @@ def get_photos_friend(user_id: int, onlySaved: bool = True, hide: bool = False):
 
         print(f"Начинаю выгрузку фотографий")
 
-        makedirs(f'{path_albums}', exist_ok=True)
 
         if dump_html or dump_html_offline:
             imgs = ""
@@ -459,6 +459,7 @@ def get_photos_friend(user_id: int, onlySaved: bool = True, hide: bool = False):
             c_text("green", f"[+]Выгруженно {len(a_photos)} фотографий")
             if dump_html or dump_html_offline:
                 try:
+                    makedirs(f'{path_albums}', exist_ok=True)
                     with (open(f'{path_albums}/{title}.html', 'w+', encoding="utf8") as save_photo,
                           open(f'{path}/photo_pre.html', 'r', encoding="utf8") as photo_pre):
                         save_photo.write(photo_pre.read() + imgs)
@@ -508,7 +509,7 @@ def get_photos_friends(onlySaved: bool = True, hide: bool = False):
             print(f"Начинаю выгрузку фотографий " + fio)
             path_user_friend = f'{path}/dump/{friend_id} - {fio}'
             path_albums = f'{path_user_friend}/albums'
-            makedirs(f'{path_user_friend}/albums', exist_ok=True)
+
 
             idd = albums['items'][0]['id']
             title = albums['items'][0]["title"]
@@ -536,6 +537,7 @@ def get_photos_friends(onlySaved: bool = True, hide: bool = False):
             c_text("green", f"[+]Выгруженно {len(a_photos)} фотографий")
             if dump_html or dump_html_offline:
                 try:
+                    makedirs(f'{path_user_friend}/albums', exist_ok=True)
                     with (open(f'{path_albums}/{title}.html', 'w+', encoding="utf8") as save_photo,
                           open(f'{path}/photo_pre.html', 'r', encoding="utf8") as photo_pre):
                         save_photo.write(photo_pre.read() + imgs)
@@ -607,7 +609,7 @@ def get_album_photo(user_id: int, album_id: int, siz: int) -> list:
 def out_dump():
     try:
         print("\n[99] Назад\n")
-        match int(input("Ввод: ")):
+        match int(input("Ввод: ").strip()):
             case 99:
                 main_menu()
             case _:
@@ -637,15 +639,15 @@ def main_menu():
 
         setting.check_err()  # Проверяет настройки на ошибки
 
-        match int(input("\nВвод: ")):
+        match int(input("\nВвод: ").strip()):
             case 1:
                 get_dialogs_photo(0)
             case 2:
-                get_dialogs_photo(int(input("Введите id пользователя: ")))
+                get_dialogs_photo(int(input("Введите id пользователя: ").strip()))
             case 3:
                 get_photos_friend(0)
             case 4:
-                get_photos_friend(int(input("Введите id пользователя: ")))
+                get_photos_friend(int(input("Введите id пользователя: ").strip()))
             case 5:
                 get_photos_friends()
             case 111:
@@ -701,9 +703,9 @@ def menu_settings(err=""):
         print("[91] Удалить сохраненного пользователя")
         print("\n[99] Назад")
 
-        match int(input("\nВвод: ")):
+        match int(input("\nВвод: ").strip()):
             case 1:
-                path_dumps = input("Введите название папки: ")
+                path_dumps = input("Введите название папки: ").strip()
                 setting.set_dump_path(path_dumps)
             # case 2:
             #	if not setting.download:
@@ -727,9 +729,9 @@ def menu_settings(err=""):
                     setting.set_dump("dump_html_offline", False)
 
             case 6:
-                setting.set_limit_photo(int(input("Введите число: ")))
+                setting.set_limit_photo(int(input("Введите число: ").strip()))
             case 7:
-                setting.set_limit_dialog(int(input("Введите число: ")))
+                setting.set_limit_dialog(int(input("Введите число: ").strip()))
             case 90:
                 user = {
                     "name": name,
@@ -767,7 +769,7 @@ def clean_exit():
     auth_menu()
 
 
-# Вход
+# Меню авторизации
 def auth_menu():
     try:
         # logging.config.fileConfig('logging.conf')
@@ -786,13 +788,13 @@ def auth_menu():
                 for user in accessToken.auth_vks["users"]:
                     print(f"{i} - {user['name']}")
                     i += 1
-                i = int(input("\nВыберите способ входа или введите номер: "))
+                i = int(input("\nВыберите способ входа или введите номер: ").strip())
 
                 if i >= 0:
                     login_data['token'] = accessToken.get_token_id(i)
                     collect(False, login_data)
             else:
-                inp = int(input("\nВыберите способ входа: "))
+                inp = int(input("\nВыберите способ входа: ").strip())
         except Exception as e:
             error_log.add("auth_menu accessToken", e)
 
@@ -800,13 +802,13 @@ def auth_menu():
 
         match inp:
             case -1:
-                login_data['token'] = input("Введите токен: ")
+                login_data['token'] = input("Введите токен: ").strip()
                 collect(False, login_data)
 
             # error_log.add('auth_menu', login_data['token'])
             case -2:
-                login_data['login'] = str(input("Введите логин: "))
-                login_data['password'] = str(input("Введите пароль: "))
+                login_data['login'] = str(input("Введите логин: ").strip())
+                login_data['password'] = str(input("Введите пароль: ").strip())
                 collect(False, login_data)
 
             # error_log.add('auth_menu', login_data['login'] + " "+ login_data['password']) if debug ==True
