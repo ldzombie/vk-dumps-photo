@@ -611,16 +611,16 @@ def out_dump():
         print("\n[99] Назад\n")
         match int(input("Ввод: ").strip()):
             case 99:
-                main_menu()
+                menu_main()
             case _:
                 print("Такого варианта нет")
-                main_menu()
+                menu_main()
     except Exception as e:  # Исключения ошибок
         error_log.add('out_dump', e)
 
 
 # Главное меню
-def main_menu():
+def menu_main():
     try:
         # Получение настроек из файла или его создание если файла нет
         setting.get_dump_config()
@@ -656,10 +656,10 @@ def main_menu():
                 clean_exit()
             case _:
                 print("Такого варианта нет")
-                main_menu()
+                menu_main()
     except Exception as e:
         error_log.add('main_menu', e)
-        main_menu()
+        menu_main()
     except KeyboardInterrupt:
         sys.exit()
 
@@ -745,7 +745,7 @@ def menu_settings(err=""):
                 accessToken.remove(user)
                 menu_settings()
             case 99:
-                main_menu()
+                menu_main()
             case _:
                 print("Такого варианта нет")
                 menu_settings()
@@ -756,21 +756,8 @@ def menu_settings(err=""):
         sys.exit()
 
 
-# Выход из аккаунта
-def clean_exit():
-    global login_vk
-    login_vk = None
-
-    global login_data
-    login_data = {
-        "token": "",
-        "login": "",
-        "password": ""}
-    auth_menu()
-
-
 # Меню авторизации
-def auth_menu():
+def menu_auth():
     try:
         # logging.config.fileConfig('logging.conf')
 
@@ -814,11 +801,24 @@ def auth_menu():
             # error_log.add('auth_menu', login_data['login'] + " "+ login_data['password']) if debug ==True
             case _:
                 print("Такого варианта нет")
-                auth_menu()
+                menu_auth()
     except Exception as e:
         error_log.add('auth_menu', e)
     except KeyboardInterrupt:
         sys.exit()
+
+
+# Выход из аккаунта
+def clean_exit():
+    global login_vk
+    login_vk = None
+
+    global login_data
+    login_data = {
+        "token": "",
+        "login": "",
+        "password": ""}
+    menu_auth()
 
 
 # Выводит кто авторизован
@@ -872,7 +872,7 @@ def collect(hide: bool, config: login_data):
             raise Exception
 
         if not hide:
-            main_menu()
+            menu_main()
 
     except Exception as e:
         error_log.add('collect', e)
@@ -930,7 +930,7 @@ def create_parser():
                       help='1 - Фотографии из всех диалогов\n 2 - Фотографии из опр. диалога \n 3 - Фото из плейлистов \n 4 - Плейлисты опр. пользователя \n 5 - Сохры всех друзей у которых открыты',
                       nargs='+')
     pars.add_argument('-u', '--user', type=int, help='id пользователя для методов 2,4', nargs='?')
-    pars.add_argument('-os', '--onlysaved', help='(default:True) в методах 1-5, берётся только альбом с сохрами',
+    pars.add_argument('-os', '--onlysaved', help='(default:True) в методах 3-5, берётся только альбом с сохрами',
                       action='store_false')
     return pars
 
@@ -938,7 +938,6 @@ def create_parser():
 # Функции аргументов
 def option_parser(argv):
     try:
-
         if not login_vk:
             if argv.token and not argv.login and not argv.password:
                 login_data['token'] = argv.token
@@ -960,22 +959,16 @@ def option_parser(argv):
             if argv.setdumpmethod:
                 if argv.setdumpmethod == "txt":
                     setting.set_dump_txt(True, bol=False)
-                    setting.set_dump_html(False, bol=False)
-                    setting.set_dump_html_offline(False, bol=False)
                 elif argv.setdumpmethod == "offline":
-                    setting.set_dump_txt(False, bol=False)
                     setting.set_dump_html(False, bol=False)
                     setting.set_dump_html_offline(True, bol=False)
                 else:
-                    setting.set_dump_txt(False, bol=False)
                     setting.set_dump_html(True, bol=False)
                     setting.set_dump_html_offline(False, bol=False)
-            if argv.setlimitphoto:
-                if argv.setlimitphoto <= 5000:
-                    setting.set_limit_photo(argv.setlimitphoto, bol=False)
-            if argv.setlimitdialog:
-                if argv.setlimitdialog <= 1000:
-                    setting.set_limit_photo(argv.setlimitdialog, bol=False)
+            if argv.setlimitphoto and argv.setlimitphoto <= setting.limits[0]:
+                setting.set_limit_photo(argv.setlimitphoto, bol=False)
+            if argv.setlimitdialog and argv.setlimitdialog <= setting.limits[1]:
+                setting.set_limit_photo(argv.setlimitdialog, bol=False)
             if argv.saveuser and not argv.removeuser:
                 us = {
                     "name": name,
@@ -986,9 +979,8 @@ def option_parser(argv):
                     "name": name,
                     "access_token": login_vk.access_token}
                 accessToken.remove(us)
-
-        if not argv.method:
-            raise Exception("Method not specified -m [1;2;3;4;5]")
+        else:
+            print("Settings ")
 
         if argv.method:
             for m in argv.method:
@@ -1012,6 +1004,8 @@ def option_parser(argv):
                         get_photos_friends(onlySaved=argv.onlysaved, hide=True)
                     case _:
                         raise Exception("Wrong method selected")
+        else:
+            raise Exception("Method not specified -m [1;2;3;4;5]")
     except Exception as err:
         if err.args:
             error_log.add('parameter parser', err.args[0])
@@ -1025,7 +1019,7 @@ if __name__ == '__main__':
         accessToken = AccessT()
 
         if len(sys.argv) == 1:
-            auth_menu()
+            menu_auth()
         else:
             parser = create_parser()
             option_parser(parser.parse_args(sys.argv[1:]))
