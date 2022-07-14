@@ -47,6 +47,10 @@ options:
   
   -sld,--setlimitdialog Лимит диалогов
   
+  -si,--setinterval 	Добавляет интервалы между запросами, default=True
+  
+  -siv,--setinvalue 	Время интервала выбирается рандомно из диапозона чисел default=[1, 10]
+  
   -su, --saveuser       Сохранить пользователя  
   
   -ru, --removeuser     Удалить пользователя 

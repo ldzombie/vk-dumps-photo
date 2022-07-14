@@ -9,6 +9,7 @@ import sys
 import argparse
 from art import tprint
 import time
+from random import randint
 
 path, filename = os.path.split(os.path.abspath(__file__))
 
@@ -23,12 +24,16 @@ login_data = {
     "password": ""}
 
 # globals
-limit_dialog = 0
-limit_photo = 0
+limit_dialog = 50
+limit_photo = 200
 dump_txt = False
 dump_html = True
 dump_html_offline = False
+dump_path = "dump"
 path_user = ""
+
+# Добавляет интервалы между операциями
+a_interval, interval_values = True, [1, 10]
 
 login_vk = None
 setting = None
@@ -104,13 +109,15 @@ class LoginVK:
 class Settings:
     def_config = {
         "setting": {
-            "path": "dump",
-            "download": False,
-            "dump_txt": False,
-            "dump_html": True,
-            "dump_html_offline": False,
-            "limit_photo": 1000,
-            "limit_dialog": 50
+            "path": dump_path,
+            "dump_txt": dump_txt,
+            "dump_html": dump_html,
+            "dump_html_offline": dump_html_offline,
+            "a_interval": a_interval,
+            "intervals_value": interval_values,
+            "limit_photo": limit_photo,
+            "limit_dialog": limit_dialog
+
         }}
 
     def __init__(self):
@@ -141,6 +148,8 @@ class Settings:
         global dump_html
         global dump_html_offline
         global path_user
+        global a_interval
+        global interval_values
 
         self.dump_path = self.def_config['setting']['path']
 
@@ -150,6 +159,8 @@ class Settings:
         dump_txt = self.def_config['setting']['dump_txt']
         dump_html = self.def_config['setting']['dump_html']
         dump_html_offline = self.def_config['setting']['dump_html_offline']
+        a_interval = self.def_config['setting']['a_interval']
+        interval_values = self.def_config['setting']['intervals_value']
         path_user = f'{path}/{self.dump_path}/{own_id} - {name}'
         makedirs(path_user, exist_ok=True)
 
@@ -163,7 +174,7 @@ class Settings:
             error_log.add("update_settings", e)
 
     def check_err(self):
-        if not dump_txt and not dump_html and not dump_html_offline: # and not download
+        if not dump_txt and not dump_html and not dump_html_offline:  # and not download
             self.def_config['setting']['dump_html'] = True
         if limit_photo > self.limits[0]:
             self.def_config['setting']['limit_photo'] = self.limits[0]
@@ -171,6 +182,11 @@ class Settings:
             self.def_config['setting']['limit_dialog'] = self.limits[1]
         if not self.dump_path:
             self.def_config['setting']['path'] = "dump"
+        if interval_values[0] < 0:
+            interval_values[0] = 1
+        if interval_values[1] > 100:
+            interval_values[1] = 100
+
         self.update_settings(False)
 
     # def set_download(self, b, bol=True):
@@ -197,6 +213,10 @@ class Settings:
 
     def set_dump_path(self, b: str, bol=True):
         self.def_config['setting']['path'] = b
+        self.update_settings(bol)
+
+    def set_interval_values(self, b: list, bol=True):
+        self.def_config['setting']['intervals_value'] = b if b[0] > 0 and b[1] < 100 else [1, 10]
         self.update_settings(bol)
 
 
@@ -260,6 +280,7 @@ def get_dialogs_photo(p_id: int, hide: bool = False):
                     # Нужно чтобы получить все диалоги, если их больше 200
                     offset = 200  # сдвиг начала отсчёта
                     while True:
+                        intervals()
                         fo1 = login_vk.vk.messages.getConversations(count=200, offset=offset)
                         length = len(fo1["items"])
 
@@ -281,8 +302,6 @@ def get_dialogs_photo(p_id: int, hide: bool = False):
 
         path_dialog = f'{path_user}/dialog'
 
-
-
         for dialog in all_dialogs:  # Идем по списку
             if p_id > 0:
                 idd = dialog["peer"]["id"]
@@ -301,6 +320,7 @@ def get_dialogs_photo(p_id: int, hide: bool = False):
                     print(f"Выгрузка фотографий - {idd} - {fio}")
 
                     if limit_photo <= 200 and not limit_photo == 0:
+                        intervals()
                         fo = login_vk.vk.messages.getHistoryAttachments(peer_id=idd, media_type='photo', start_from=0,
                                                                         count=limit_photo,
                                                                         preserve_order=1, max_forwards_level=45)
@@ -323,6 +343,7 @@ def get_dialogs_photo(p_id: int, hide: bool = False):
                                         count = 200
                                     if count == 0 or count < 0:
                                         break
+                                        intervals()
                                 fo1 = login_vk.vk.messages.getHistoryAttachments(peer_id=idd, media_type='photo',
                                                                                  start_from={offset},
                                                                                  count=count,
@@ -381,7 +402,7 @@ def get_dialogs_photo(p_id: int, hide: bool = False):
                 file_name = f'{idd} - {fio}.json'
             else:
                 file_name = 'dialogs.json'
-                
+
             with open(join(f'{path_dialog}', file_name), 'w') as alb_file:
                 json.dump(dialogs, alb_file)
 
@@ -420,7 +441,6 @@ def get_photos_friend(user_id: int, onlySaved: bool = True, hide: bool = False):
             raise Exception
 
         print(f"Начинаю выгрузку фотографий")
-
 
         if dump_html or dump_html_offline:
             imgs = ""
@@ -510,7 +530,6 @@ def get_photos_friends(onlySaved: bool = True, hide: bool = False):
             path_user_friend = f'{path}/dump/{friend_id} - {fio}'
             path_albums = f'{path_user_friend}/albums'
 
-
             idd = albums['items'][0]['id']
             title = albums['items'][0]["title"]
             size = albums['items'][0]["size"]
@@ -580,7 +599,7 @@ def get_album_photo(user_id: int, album_id: int, siz: int) -> list:
                         break
                 if count > 1000:
                     count = 1000
-                time.sleep(1)
+                intervals()
                 fo1 = login_vk.vk.photos.get(owner_id=user_id,
                                              album_id=album_id,
                                              photo_sizes=1,
@@ -617,6 +636,13 @@ def out_dump():
                 menu_main()
     except Exception as e:  # Исключения ошибок
         error_log.add('out_dump', e)
+
+
+def intervals():
+    global a_interval
+    global interval_values
+    if a_interval:
+        time.sleep(randint(interval_values[0], interval_values[1]))
 
 
 # Главное меню
@@ -676,10 +702,12 @@ def menu_settings(err=""):
             err = ""
 
         print(f'Папка сохранения - {setting.dump_path}')
-        # print(f'download(не реализовано) - {download}')
         print(f'dump_to_txt - {dump_txt}')
         print(f'dump_to_html_online - {dump_html}')
         print(f'dump_to_html_offline(Долгий метод) - {dump_html_offline} ')
+        print(f'interval - {a_interval}')
+        if a_interval:
+            print(f'interval_value - {interval_values}')
 
         if limit_photo == 0:
             print(f'Лимит фотографий - нет')
@@ -692,12 +720,14 @@ def menu_settings(err=""):
             print(f'Лимит диалогов - {limit_dialog}')
 
         print("\n[1] Изменить папку сохранения")
-        c_text("red", "[2] Изменить download(не реализовано)")
-        print("[3] Изменить dump_txt")
-        print("[4] Изменить dump_html")
-        print("[5] Изменить dump_html offline")
-        print("[6] Изменить лимит фотографий")
-        print("[7] Изменить лимит диалогов")
+        print("[2] Изменить dump_txt")
+        print("[3] Изменить dump_html")
+        print("[4] Изменить dump_html offline")
+        print("[5] Изменить interval")
+        if a_interval:
+            print("[6] Изменить значения интервала")
+        print("[7] Изменить лимит фотографий")
+        print("[8] Изменить лимит диалогов")
 
         print("\n[90] Сохранить токен в файл")
         print("[91] Удалить сохраненного пользователя")
@@ -707,30 +737,29 @@ def menu_settings(err=""):
             case 1:
                 path_dumps = input("Введите название папки: ").strip()
                 setting.set_dump_path(path_dumps)
-            # case 2:
-            #	if not setting.download:
-            #		setting.set_download(True)
-            #	else:
-            #		setting.set_download(False)
-            case 3:
+            case 2:
                 if not dump_txt:
                     setting.set_dump("dump_txt", True)
                 else:
                     setting.set_dump("dump_txt", False)
-            case 4:
+            case 3:
                 if not dump_html:
                     setting.set_dump("dump_html", True)
                 else:
                     setting.set_dump("dump_html", False)
-            case 5:
+            case 4:
                 if not dump_html_offline:
                     setting.set_dump("dump_html_offline", True)
                 else:
                     setting.set_dump("dump_html_offline", False)
-
+            case 5:
+                setting.set_dump("a_interval", not a_interval)
             case 6:
-                setting.set_limit_photo(int(input("Введите число: ").strip()))
+                x = input("Введите 2 числа: ").strip().split()
+                setting.set_interval_values(list(map(int, x)))
             case 7:
+                setting.set_limit_photo(int(input("Введите число: ").strip()))
+            case 8:
                 setting.set_limit_dialog(int(input("Введите число: ").strip()))
             case 90:
                 user = {
@@ -924,6 +953,9 @@ def create_parser():
                       help='Метод сохранения данных, offline-фотографии доступны без интернета', nargs='?')
     pars.add_argument('-slp', '--setlimitphoto', type=int, help='Лимит фотографий', nargs='?')
     pars.add_argument('-sld', '--setlimitdialog', type=int, help='Лимит диалогов', nargs='?')
+    pars.add_argument('-si', '--setinterval',  help='Добавляет интервалы между запросами, default=True', action='store_true')
+    pars.add_argument('-siv', '--setinvalue', type=int,
+                      help='Время интервала выбирается рандомно из диапозона чисел default=[1, 10]', nargs='+')
     pars.add_argument('-su', '--saveuser', help='Сохранить пользователя', action='store_true')
     pars.add_argument('-ru', '--removeuser', help='Удалить пользователя', action='store_true')
     pars.add_argument('-m', '--method', type=int,
@@ -951,24 +983,36 @@ def option_parser(argv):
 
         print("Auth success")
 
-        if argv.setpath or argv.setdumpmethod or argv.setlimitphoto or argv.setlimitdialog or argv.saveuser or argv.removeuser:
-            setting.get_dump_config()
+        if (argv.setpath
+                or argv.setdumpmethod
+                or argv.setlimitphoto
+                or argv.setlimitdialog
+                or argv.saveuser
+                or argv.removeuser
+                or argv.setinterval
+                or argv.setinvalue
+        ):
+
             setting.check_err()
             if argv.setpath:
                 setting.set_dump_path(argv.setpath, False)
             if argv.setdumpmethod:
                 if argv.setdumpmethod == "txt":
-                    setting.set_dump_txt(True, bol=False)
+                    setting.set_dump("dump_txt", True, bol=False)
                 elif argv.setdumpmethod == "offline":
-                    setting.set_dump_html(False, bol=False)
-                    setting.set_dump_html_offline(True, bol=False)
+                    setting.set_dump("dump_html_offline", True, bol=False)
+                    setting.set_dump("dump_html", False, bol=False)
                 else:
-                    setting.set_dump_html(True, bol=False)
-                    setting.set_dump_html_offline(False, bol=False)
+                    setting.set_dump("dump_html_offline", False, bol=False)
+                    setting.set_dump("dump_html", True, bol=False)
             if argv.setlimitphoto and argv.setlimitphoto <= setting.limits[0]:
                 setting.set_limit_photo(argv.setlimitphoto, bol=False)
             if argv.setlimitdialog and argv.setlimitdialog <= setting.limits[1]:
-                setting.set_limit_photo(argv.setlimitdialog, bol=False)
+                setting.set_limit_dialog(argv.setlimitdialog, bol=False)
+            if argv.setinterval:
+                setting.set_dump("a_interval", False, bol=False)
+            if argv.setinvalue:
+                setting.set_interval_values(argv.setintervalvalue,bol =False)
             if argv.saveuser and not argv.removeuser:
                 us = {
                     "name": name,
@@ -979,8 +1023,6 @@ def option_parser(argv):
                     "name": name,
                     "access_token": login_vk.access_token}
                 accessToken.remove(us)
-        else:
-            print("Settings ")
 
         if argv.method:
             for m in argv.method:
