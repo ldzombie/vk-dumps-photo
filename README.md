@@ -41,7 +41,7 @@ options:
   
   -sp, --setpath        Название папки для сохранения
   
-  -sd, --setdumpmethod  Метод сохранения данных {txt,offline,online}
+  -sd, --setdumpmethod  Метод сохранения данных {txt,offline,online} Метод сохранения данных, offline-фотографии доступны без интернета(самый долгий метод "Я предупредил")
   
   -slp, --setlimitphoto Лимит фотографий
   
@@ -60,7 +60,7 @@ options:
                         
   -u , --user           id пользователя для методов 2,4
   
-  -os , --onlysaved     (default:True) в методах 3-5, берется только альбом с сохрами
+  -os , --onlysaved     (default:True) в методах 3-4, берется только альбом с сохрами
   ```
 Пример   
 ```python main.py -t token -sp dump -slp 500 -sld 50 -su -m 1 4 -u 123456786 ```
