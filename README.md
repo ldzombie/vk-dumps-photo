@@ -47,9 +47,13 @@ options:
   
   -sld,--setlimitdialog Лимит диалогов
   
-  -si,--setinterval 	Добавляет интервалы между запросами, default=True
+  -si, --setinterval 	Добавляет интервалы между запросами, default=True
   
-  -siv,--setinvalue 	Время интервала выбирается рандомно из диапозона чисел default=[1, 10]
+  -siv, --setinvalue 	Время интервала выбирается рандомно из диапозона чисел default=[1, 10]
+  
+  -shw, --sethw 		Устанавливает размеры фото default=[500, 650] (height and width)
+  
+  -srod, --setrod 		Как часто файл фотографий альбома будет делиться на части default=2(каждые 2000 фотографий)
   
   -su, --saveuser       Сохранить пользователя  
   
@@ -63,4 +67,4 @@ options:
   -os , --onlysaved     (default:True) в методах 3-4, берется только альбом с сохрами
   ```
 Пример   
-```python main.py -t token -sp dump -slp 500 -sld 50 -su -m 1 4 -u 123456786 ```
+```python main.py -t token -sp dump -slp 500 -sld 50 -shw 650 1280 -su -m 1 4 -u 123456786 ```
