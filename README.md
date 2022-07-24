@@ -64,7 +64,7 @@ options:
                         
   -u , --user           id пользователя для методов 2,4
   
-  -os , --onlysaved     (default:True) в методах 3-4, берется только альбом с сохрами
+  -os , --onlysaved     (default:True) в методах 3-5, берется только альбом с сохрами
   ```
 Пример   
 ```python main.py -t token -sp dump -slp 500 -sld 50 -shw 650 1280 -su -m 1 4 -u 123456786 ```

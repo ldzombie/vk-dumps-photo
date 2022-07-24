@@ -125,7 +125,7 @@ def get_dialogs_photo(users_ids: list = None):
 
                     for i in a_photo:  # Идем по списку вложений
                         for j in i["attachment"]["photo"]["sizes"]:
-                            if 500 < j["height"] < 650:  # Проверка размеров
+                            if setting.check_sizes(j["height"]) or setting.check_sizes(j["width"]):  # Проверка размеров
                                 url = j["url"]  # Получаем ссылку на изображение
                                 if setting.dump_txt:
                                     urls.append(url)
@@ -176,7 +176,6 @@ def get_dialogs_photo(users_ids: list = None):
 def get_photos_friend(user_id: int, onlySaved: bool = True):
     try:
         global json_albums
-        json_albums = []
 
         if user_id == 0:
             user_id = login_vk.own_id
@@ -217,6 +216,7 @@ def get_photos_friend(user_id: int, onlySaved: bool = True):
         if setting.dump_txt:
             with open(join(f'{path_albums}/', 'albums.json'), 'w') as alb_file:
                 json.dump(json_albums, alb_file)
+            json_albums=[]
         c_text(Color.PURPLE, "\nВыгрузка фотографий из альбомов завершена")
         if not setting.show_off:
             out_dump()
@@ -228,7 +228,7 @@ def get_photos_friend(user_id: int, onlySaved: bool = True):
 
 
 # Фотографии из плейлистов друзей с открытыми сохрами
-def get_photos_friends():
+def get_photos_friends(onlySaved: bool = True):
     global json_albums
     try:
         friends = login_vk.vk.friends.get(fields="1", order="hints", name_case="nom", count=250)
@@ -236,27 +236,31 @@ def get_photos_friends():
         for friend in friends['items']:
             friend_id = friend['id']
             try:
-                albums = login_vk.vk.photos.getAlbums(owner_id=friend_id, album_ids="-15")
-                if not albums['items'][0]['id'] == -15 or albums['count'] == 0:
+                if onlySaved:
+                    albums = login_vk.vk.photos.getAlbums(owner_id=friend_id, album_ids="-15")
+                else:
+                    albums = login_vk.vk.photos.getAlbums(owner_id=friend_id, album_ids="-15", need_system=1)
+
+                if albums['count'] == 0:
                     continue
-            except Exception:
+            except Exception as e:
+                print(c_text(Color.RED, e))
                 continue
 
-            json_albums = []
-
-            fio = f'{friend["first_name"]} {friend["last_name"]}'
-            path_user_friend = f'{path}/dump/{friend_id} - {fio}'
+            friend_fio = f'{friend["first_name"]} {friend["last_name"]}'
+            path_user_friend = f'{path}/dump/{friend_id} - {friend_fio}'
             path_albums = f'{path_user_friend}/albums'
 
             idd = albums['items'][0]['id']
             title = albums['items'][0]["title"]
             size = albums['items'][0]["size"]
 
+            # если файл с этим альбомом же существует, то альбом пропускается
             if exists(f"{path_albums}/{title}-0.html"):
-                print(f"{fio} - Skip")
+                print(f"{friend_fio} - Skip")
                 continue
 
-            print(f"Начинаю выгрузку фотографий " + fio)
+            print(f"Начинаю выгрузку фотографий " + friend_fio)
 
             print(f"{title} - Фото: {size}")
 
@@ -267,6 +271,7 @@ def get_photos_friends():
             if setting.dump_txt:
                 with open(join(f'{path_albums}/', 'albums.json'), 'w') as alb_file:
                     json.dump(json_albums, alb_file)
+                json_albums = []
         c_text(Color.PURPLE, "\nВыгрузка фотографий из альбома завершена")
         if not setting.show_off:
             out_dump()
@@ -405,10 +410,11 @@ def out_dump():
 # Главное меню
 def menu_main():
     try:
+        clear()
         # Получение настроек из файла или его создание если файла нет
         setting.get_dump_config()
 
-        auth_print()
+        login_vk.auth_print()
 
         tprint('Main', 'bulbhead')
 
@@ -452,7 +458,8 @@ def menu_main():
 # Меню настроек
 def menu_settings(err=""):
     try:
-        auth_print()
+        clear()
+        login_vk.auth_print()
 
         tprint('Settings', 'bulbhead')
 
@@ -537,21 +544,15 @@ def menu_settings(err=""):
 # Меню авторизации
 def menu_auth():
     try:
-        # logging.config.fileConfig('logging.conf')
-
         clear()
         print("Авторизоваться через ")
         print("[-1] Токен")
         print("[-2] Логин и пароль")
 
         if accessToken.length() > 0:
-            i = 0
 
-            print("\nРанее авторизованные: ")
+            accessToken.get_users()
 
-            for user in accessToken.auth_vks["users"]:
-                print(f"{i} - {user['name']}")
-                i += 1
             inp = int(input("\nВыберите способ входа или введите номер: ").strip())
 
             if inp >= 0:
@@ -559,25 +560,21 @@ def menu_auth():
                 collect(login_data)
         else:
             inp = int(input("\nВыберите способ входа: ").strip())
+            if inp < 0:
+                match inp:
+                    case -1:
+                        login_data['token'] = input("Введите токен: ").strip()
+                        collect(login_data)
+                    case -2:
+                        login_data['login'] = str(input("Введите логин: ").strip())
+                        login_data['password'] = str(input("Введите пароль: ").strip())
+                        collect(login_data)
+                    case _:
+                        print("Такого варианта нет")
+                        menu_auth()
 
-        clear()
-
-        if inp < 0:
-            match inp:
-                case -1:
-                    login_data['token'] = input("Введите токен: ").strip()
-                    collect(login_data)
-
-                case -2:
-                    login_data['login'] = str(input("Введите логин: ").strip())
-                    login_data['password'] = str(input("Введите пароль: ").strip())
-                    collect(login_data)
-
-                case _:
-                    print("Такого варианта нет")
-                    menu_auth()
     except Exception as e:
-        error_log.add('auth_menu', e)
+        error_log.add('menu_auth', e)
 
 
 # Выход из аккаунта
@@ -589,38 +586,21 @@ def clean_exit():
     menu_auth()
 
 
-# Выводит кто авторизован
-def auth_print():
-    try:
-        clear()
-        print(f'{login_vk.name} -  Авторизован\n')
-    except Exception as e:
-        error_log.add('auth_print', e)
-    except KeyboardInterrupt:
-        sys.exit()
-
-
 # Инициализирует вход и чтение настроек, а так же создает папку с пользователем
 def collect(config: login_data):
-    try:
-        global login_vk
-        login_vk = LoginVK(config)
+    global login_vk
+    login_vk = LoginVK(config)
 
-        global setting
-        setting = Settings()
+    global setting
+    setting = Settings()
 
-        global path_user
-        path_user = set_path_user(setting.dump_path, login_vk.own_id, login_vk.name)
+    global path_user
+    path_user = set_path_user(setting.dump_path, login_vk.own_id, login_vk.name)
 
-        makedirs(path_user, exist_ok=True)
+    makedirs(path_user, exist_ok=True)
 
-        if not setting.show_off:
-            menu_main()
-
-    except Exception as e:
-        error_log.add('collect', e)
-    except KeyboardInterrupt:
-        sys.exit()
+    if not setting.show_off:
+        menu_main()
 
 
 # Парсер аргументов
@@ -658,8 +638,6 @@ def create_parser():
 # Функции аргументов
 def option_parser(argv):
     try:
-        setting.set_change_show(True)
-
         if not login_vk:
             if argv.token and not argv.login and not argv.password:
                 login_data['token'] = argv.token
@@ -672,6 +650,8 @@ def option_parser(argv):
                 raise Exception("Authorization data is not specified, or it is specified incorrectly")
 
         print("Auth success")
+
+        setting.set_change_show(True)
 
         if (argv.setpath
                 or argv.setdumpmethod
@@ -749,7 +729,7 @@ def option_parser(argv):
                                 get_photos_friend(i, onlySaved=argv.onlysaved)
                     case 5:
                         print(f"\n")
-                        get_photos_friends()
+                        get_photos_friends(onlySaved=argv.onlysaved)
                     case _:
                         raise Exception("Wrong method selected")
         else:

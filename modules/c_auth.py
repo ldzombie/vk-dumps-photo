@@ -1,5 +1,6 @@
 import vk_api
 
+from modules.c_access_token import AccessT
 from modules.oth_function import path
 
 login_data = {
@@ -46,7 +47,17 @@ class LoginVK:
                 raise Exception
 
         except Exception as e:
+            if not self.login_data['token'] == "":
+                AccessT().remove_token(self.login_data['token'])
             raise ConnectionError(e)
+
+    # Выводит кто авторизован
+    def auth_print(self):
+        try:
+            print(f'{self.name} -  Авторизован\n')
+        except Exception as e:
+            from modules import c_error
+            c_error.add_error(e)
 
     @staticmethod
     def auth_handler():
