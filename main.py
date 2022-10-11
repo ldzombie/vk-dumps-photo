@@ -173,7 +173,7 @@ def get_dialogs_photo(users_ids: list = None):
 
 
 # Фотографии из плейлистов пользователя по id
-def get_photos_friend(user_id: int, onlySaved: bool = True):
+def get_photos_friend(user_id: int):
     try:
         global json_albums
 
@@ -186,7 +186,7 @@ def get_photos_friend(user_id: int, onlySaved: bool = True):
             path_user_friend = f'{path}/dump/{user_id} - {fio}'
             path_albums = f'{path_user_friend}/albums'
 
-        if onlySaved:
+        if setting.album_only_saved:
             albums = login_vk.vk.photos.getAlbums(owner_id=user_id, album_ids="-15")
         else:
             albums = login_vk.vk.photos.getAlbums(owner_id=user_id, need_system=1)
@@ -228,7 +228,7 @@ def get_photos_friend(user_id: int, onlySaved: bool = True):
 
 
 # Фотографии из плейлистов друзей с открытыми сохрами
-def get_photos_friends(onlySaved: bool = True):
+def get_photos_friends():
     global json_albums
     try:
         friends = login_vk.vk.friends.get(fields="1", order="hints", name_case="nom", count=250)
@@ -236,7 +236,7 @@ def get_photos_friends(onlySaved: bool = True):
         for friend in friends['items']:
             friend_id = friend['id']
             try:
-                if onlySaved:
+                if setting.album_only_saved:
                     albums = login_vk.vk.photos.getAlbums(owner_id=friend_id, album_ids="-15")
                 else:
                     albums = login_vk.vk.photos.getAlbums(owner_id=friend_id, album_ids="-15", need_system=1)
@@ -662,7 +662,8 @@ def option_parser(argv):
                 or argv.setinterval
                 or argv.setinvalue
                 or argv.sethw
-                or argv.setrod):
+                or argv.setrod
+                or argv.onlysaved):
 
             setting.check_err()
 
@@ -706,6 +707,9 @@ def option_parser(argv):
                     "name": login_vk.name,
                     "access_token": login_vk.access_token}
                 accessToken.remove(us)
+            if argv.onlysaved:
+                setting.set_album_only_saved(argv.onlysaved)
+
 
         if argv.method:
             for m in argv.method:
@@ -719,17 +723,17 @@ def option_parser(argv):
                             get_dialogs_photo(argv.user)
                     case 3:
                         print(f"\n")
-                        get_photos_friend(0, onlySaved=argv.onlysaved)
+                        get_photos_friend(0)
                     case 4:
                         if argv.user and len(argv.user) == 1:
                             print(f"\n")
-                            get_photos_friend(argv.user, onlySaved=argv.onlysaved)
+                            get_photos_friend(argv.user)
                         else:
                             for i in argv.user:
-                                get_photos_friend(i, onlySaved=argv.onlysaved)
+                                get_photos_friend(i)
                     case 5:
                         print(f"\n")
-                        get_photos_friends(onlySaved=argv.onlysaved)
+                        get_photos_friends()
                     case _:
                         raise Exception("Wrong method selected")
         else:

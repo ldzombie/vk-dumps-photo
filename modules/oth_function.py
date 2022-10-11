@@ -40,7 +40,7 @@ def c_text(val1: Color, text):
         case Color.GRAY:
             color = '\033[37m'
         case _:
-            color = '\033[91m'
+            print(f'{text}')
 
     ENDC = '\033[0m'
     print(f'{color}{text}{ENDC}')
