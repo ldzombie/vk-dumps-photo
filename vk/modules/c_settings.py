@@ -4,6 +4,9 @@ from random import randint
 
 
 # Класс всех настроек
+from vk.modules.oth_function import path
+
+
 class Settings:
     def_config = {
         "setting": {
@@ -12,7 +15,6 @@ class Settings:
             "dump_html": True,
             "dump_html_offline": False,
             "a_interval": True,
-            "album_only_saved": True,
             "interval_values": [1, 10],
             "s_height_width": [500, 650],
             "s_rod": 2,
@@ -21,16 +23,15 @@ class Settings:
 
         }}
 
-    def __init__(self):
-        self.show_off = False
+    def __init__(self, user_id):
 
-        self.dump_path = "dump"
         self.dump_html_offline = None
         self.dump_html = None
         self.dump_txt = None
         self.limit_dialog = None
         self.limit_photo = None
-        self.album_only_saved = None
+        self.dump_path = "dump"
+        self.user_id = user_id
 
         self.s_rod = None
         self.s_height_width = None
@@ -39,7 +40,7 @@ class Settings:
         self.interval_values = None
 
         try:
-            with open('config.json', 'r') as config_file:
+            with open(f"{path}/{user_id}/config.json", 'r') as config_file:
                 self.def_config = json.load(config_file)
             self.get_dump_config()
         # auth_menu()
@@ -49,7 +50,7 @@ class Settings:
 
     def dump_config(self):
         if self.def_config is not None:
-            with open('config.json', 'w+') as config_file:
+            with open(f"{path}/{self.user_id}/config.json", 'w+') as config_file:
                 json.dump(self.def_config, config_file)
 
     def get_dump_config(self):
@@ -60,7 +61,6 @@ class Settings:
         self.dump_txt = bool(self.def_config['setting']['dump_txt'])
         self.dump_html = bool(self.def_config['setting']['dump_html'])
         self.dump_html_offline = bool(self.def_config['setting']['dump_html_offline'])
-        self.album_only_saved = bool(self.def_config['setting']["album_only_saved"])
 
         self.a_interval = bool(self.def_config['setting']['a_interval'])
         self.interval_values = list(self.def_config['setting']['interval_values'])
@@ -94,7 +94,6 @@ class Settings:
 
         self.update_settings()
 
-
     def set_dump(self, key: str, b: bool):
         self.def_config['setting'][key] = b
         self.update_settings()
@@ -122,12 +121,6 @@ class Settings:
     def set_rod(self, val1: int):
         self.def_config['setting']['s_rod'] = val1 if val1 > 1 else 2
         self.update_settings()
-
-    def set_change_show(self, val: bool):
-        self.show_off = val
-
-    def set_album_only_saved(self, val: bool):
-        self.album_only_saved = val
 
     def intervals(self):
         if self.a_interval:
