@@ -13,11 +13,6 @@
 
 ```python main.py```   
 
-``` pip install -r requirements.txt 
-	or
-	install requirements.bat
-``` 
-
 #### Авторизация
 ![Img 1](https://github.com/ldzombie/vk-dumps-photo/blob/main/img/img_1.jpg?raw=true)
 
