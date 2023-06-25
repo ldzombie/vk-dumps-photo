@@ -1,0 +1,7 @@
+.env
+.idea/
+__pycache__/
+modules/.env
+modules/__pycache__/
+vk/modules/__pycache__/
+vk/__pycache__/

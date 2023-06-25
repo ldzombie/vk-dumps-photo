@@ -1,6 +1,10 @@
 import telebot
+from dotenv import load_dotenv
+import os
 
-TOKEN = '5574202603:AAF3M8pBS05nq1OYvA28U9n1hbldq4usCR0'
-ADMIN_ID = 784858614
+load_dotenv()
+
+TOKEN = os.getenv('TOKEN')
+ADMIN_ID = os.getenv('ADMIN_ID')
 
 bot = telebot.TeleBot(TOKEN)
