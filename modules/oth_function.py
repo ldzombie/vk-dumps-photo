@@ -50,6 +50,10 @@ def c_text(val1: Color, text):
 def get_as_base64(url):
     return base64.b64encode(requests.get(url).content).decode('utf-8')
 
+def get_img_content(url):
+    return requests.get(url).content
+
+
 
 # Создает файл photo_pre.html
 def create_photo_pre():
