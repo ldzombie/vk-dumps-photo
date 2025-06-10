@@ -377,9 +377,12 @@ def save_file_html(photos: list, idd: str, path_albums: str, title: str):
                                   f'title="Найдено в альбоме - {idd}">'
                     break  # чтобы не добавляло одинаковых фото
 
-        if setting.dump_html or setting.dump_html_offline:
+        if setting.dump_html or setting.dump_html_offline or setting.save_photo_jpg:
             try:
                 makedirs(f'{path_albums}', exist_ok=True)
+for ind, ph in enumerate(l_imgs):
+                    with open(f'{path_albums}/{ind}.jpg', 'ws') as localFile:
+                        localFile.write(get_img_content(ph))
                 with (open(f'{path_albums}/{title}.html', 'w+', encoding="utf8") as save_photo,
                       open(f'{path}/photo_pre.html', 'r', encoding="utf8") as photo_pre):
                     save_photo.write(photo_pre.read() + l_imgs)
