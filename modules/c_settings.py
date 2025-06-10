@@ -11,6 +11,7 @@ class Settings:
             "dump_txt": False,
             "dump_html": True,
             "dump_html_offline": False,
+            "save_photo_jpg": True,
             "a_interval": True,
             "album_only_saved": True,
             "interval_values": [1, 10],
